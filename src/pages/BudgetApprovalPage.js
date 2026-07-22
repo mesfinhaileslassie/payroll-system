@@ -1,8 +1,12 @@
 // src/pages/BudgetApprovalPage.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Form, Button, Alert } from 'react-bootstrap';
 import Layout from '../components/common/Layout';
-import { FaMoneyBillWave, FaShieldAlt } from 'react-icons/fa';
+import { FaMoneyBillWave, FaShieldAlt, FaCheckCircle } from 'react-icons/fa';
+import axios from 'axios';
+
+// API Base URL
+const API_URL = 'https://radial-settle-docile.ngrok-free.dev/api';
 
 const BudgetApprovalPage = () => {
   const [amount, setAmount] = useState('');
@@ -12,64 +16,165 @@ const BudgetApprovalPage = () => {
   const [otp, setOtp] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState(null);
+  const [budgetId, setBudgetId] = useState(null);
+  const [secretKey, setSecretKey] = useState('');
+  const [deviceId, setDeviceId] = useState(null);
+
+  // Load secret key from storage or API
+  useEffect(() => {
+    const loadSecretKey = async () => {
+      try {
+        // In production, get this from the device registration
+        // For now, we'll fetch it from the API
+        const response = await axios.get(`${API_URL}/device/1`);
+        if (response.data.success) {
+          setSecretKey(response.data.data.secretKey);
+          setDeviceId(response.data.data.id);
+        }
+      } catch (error) {
+        console.error('Error loading secret key:', error);
+      }
+    };
+    loadSecretKey();
+  }, []);
 
   const handleSubmitBudget = async () => {
-  if (!amount || !department || !description) {
-    setResult({ success: false, message: 'Please fill in all fields' });
-    return;
-  }
+    if (!amount || !department || !description) {
+      setResult({ success: false, message: 'Please fill in all fields' });
+      return;
+    }
 
-  setIsSubmitting(true);
-  setResult(null);
+    setIsSubmitting(true);
+    setResult(null);
 
-  try {
-    const response = await axios.post('http://localhost:5062/api/budget/submit', {
-      amount: parseFloat(amount),
-      department,
-      description,
-      userId: 1 // Replace with actual user ID from login
-    });
-
-    if (response.data.success) {
-      setShowOTP(true);
-      setResult({
-        success: true,
-        message: 'Budget submitted. Enter OTP to approve.'
+    try {
+      const response = await axios.post(`${API_URL}/budget/submit`, {
+        amount: parseFloat(amount),
+        department,
+        description,
+        userId: 1
       });
-    } else {
+
+      if (response.data.success) {
+        setBudgetId(response.data.approvalId);
+        setShowOTP(true);
+        setResult({
+          success: true,
+          message: 'Budget submitted. Enter OTP to approve.'
+        });
+      } else {
+        setResult({
+          success: false,
+          message: response.data.message || 'Submission failed'
+        });
+      }
+    } catch (error) {
       setResult({
         success: false,
-        message: response.data.message || 'Submission failed'
+        message: error.response?.data?.message || 'Error submitting budget'
       });
+    } finally {
+      setIsSubmitting(false);
     }
-  } catch (error) {
-    setResult({
-      success: false,
-      message: error.response?.data?.message || 'Error submitting budget'
-    });
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  };
 
-
-  const handleVerifyOTP = () => {
+  const handleVerifyOTP = async () => {
     if (!otp || otp.length < 6) {
       setResult({ success: false, message: 'Please enter a valid 6-digit OTP' });
       return;
     }
 
-    setIsSubmitting(true);
+    if (!secretKey) {
+      setResult({ success: false, message: 'Secret key not loaded. Please refresh.' });
+      return;
+    }
 
-    setTimeout(() => {
-      setIsSubmitting(false);
-      if (otp === '123456') {
-        setResult({ success: true, message: 'Budget approved successfully!' });
+    setIsSubmitting(true);
+    setResult(null);
+
+    try {
+      // Step 1: Verify OTP with backend
+      const response = await axios.post(`${API_URL}/device/verify-otp`, {
+        secretKey: secretKey,
+        token: otp
+      });
+
+      if (response.data.valid) {
+        // Step 2: OTP is valid - approve budget
+        if (budgetId) {
+          const approveResponse = await axios.post(`${API_URL}/budget/${budgetId}/approve`, {
+            otp: otp
+          });
+
+          if (approveResponse.data.success) {
+            setResult({ 
+              success: true, 
+              message: '✅ OTP Verified! Budget approved successfully.' 
+            });
+            setShowOTP(false);
+            setOtp('');
+            setAmount('');
+            setDepartment('');
+            setDescription('');
+          } else {
+            setResult({ 
+              success: false, 
+              message: approveResponse.data.message || 'Budget approval failed' 
+            });
+          }
+        } else {
+          setResult({ 
+            success: false, 
+            message: 'Budget ID not found. Please resubmit.' 
+          });
+        }
       } else {
-        setResult({ success: false, message: 'Invalid OTP. Please try again.' });
+        setResult({ 
+          success: false, 
+          message: '❌ Invalid OTP. Please try again.' 
+        });
         setOtp('');
       }
-    }, 1500);
+    } catch (error) {
+      setResult({ 
+        success: false, 
+        message: error.response?.data?.message || 'Error verifying OTP' 
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResendOTP = async () => {
+    setIsSubmitting(true);
+    setResult(null);
+    setOtp('');
+
+    try {
+      const response = await axios.post(`${API_URL}/device/generate-otp`, {
+        userId: 1,
+        deviceId: deviceId
+      });
+
+      if (response.data.success) {
+        setResult({ 
+          success: true, 
+          message: '✅ New OTP generated. Enter the code from your app.' 
+        });
+      } else {
+        setResult({ 
+          success: false, 
+          message: response.data.message || 'Failed to generate OTP' 
+        });
+      }
+    } catch (error) {
+      setResult({ 
+        success: false, 
+        message: error.response?.data?.message || 'Error generating OTP' 
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -77,7 +182,7 @@ const BudgetApprovalPage = () => {
       <Container>
         <h2 className="mb-4">Budget Approval</h2>
         <p className="text-muted mb-4">
-          Submit a budget for approval with OTP verification
+          Submit a budget for approval with OTP verification from your Soft Token app
         </p>
 
         <Row>
@@ -90,6 +195,7 @@ const BudgetApprovalPage = () => {
               <Card.Body>
                 {result && (
                   <Alert variant={result.success ? 'success' : 'danger'} className="mb-3">
+                    {result.success && <FaCheckCircle className="me-2" />}
                     {result.message}
                   </Alert>
                 )}
@@ -146,11 +252,15 @@ const BudgetApprovalPage = () => {
                     <Alert variant="info">
                       <FaShieldAlt className="me-2" />
                       Enter the OTP from your Soft Token app to approve this budget.
+                      <br />
+                      <small className="text-muted">
+                        Open your Soft Token app, go to Token screen, and generate a token.
+                      </small>
                     </Alert>
 
                     <Form>
                       <Form.Group className="mb-3">
-                        <Form.Label>Enter OTP</Form.Label>
+                        <Form.Label>Enter OTP from Soft Token App</Form.Label>
                         <Form.Control
                           type="text"
                           placeholder="000000"
@@ -168,6 +278,9 @@ const BudgetApprovalPage = () => {
                             padding: '12px'
                           }}
                         />
+                        <Form.Text className="text-muted">
+                          The OTP expires in 30 seconds
+                        </Form.Text>
                       </Form.Group>
 
                       <div className="d-flex gap-2">
@@ -177,20 +290,31 @@ const BudgetApprovalPage = () => {
                           disabled={isSubmitting || otp.length < 6}
                           className="flex-grow-1"
                         >
-                          {isSubmitting ? 'Verifying...' : 'Approve with OTP'}
+                          {isSubmitting ? 'Verifying...' : 'Approve Budget'}
                         </Button>
                         <Button
                           variant="outline-secondary"
-                          onClick={() => {
-                            setShowOTP(false);
-                            setOtp('');
-                            setResult(null);
-                          }}
+                          onClick={handleResendOTP}
+                          disabled={isSubmitting}
                         >
-                          Back
+                          Resend OTP
                         </Button>
                       </div>
                     </Form>
+
+                    <div className="text-center mt-3">
+                      <Button
+                        variant="outline-secondary"
+                        size="sm"
+                        onClick={() => {
+                          setShowOTP(false);
+                          setOtp('');
+                          setResult(null);
+                        }}
+                      >
+                        Back
+                      </Button>
+                    </div>
                   </div>
                 )}
               </Card.Body>
