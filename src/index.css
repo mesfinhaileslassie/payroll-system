@@ -1,3 +1,6 @@
+/* src/index.css */
+@import 'bootstrap/dist/css/bootstrap.min.css';
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -5,9 +8,91 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: #f5f7fa;
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #9E0000;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #7a0000;
+}
+
+/* Primary color #9E0000 */
+.btn-primary {
+  background-color: #9E0000 !important;
+  border-color: #9E0000 !important;
+}
+
+.btn-primary:hover {
+  background-color: #7a0000 !important;
+  border-color: #7a0000 !important;
+}
+
+.btn-outline-primary {
+  color: #9E0000 !important;
+  border-color: #9E0000 !important;
+}
+
+.btn-outline-primary:hover {
+  background-color: #9E0000 !important;
+  color: white !important;
+}
+
+.card {
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: none;
+}
+
+.card-header {
+  background-color: #9E0000;
+  color: white;
+  border-radius: 12px 12px 0 0 !important;
+  padding: 16px 20px;
+  font-weight: 600;
+}
+
+.form-control:focus {
+  border-color: #9E0000;
+  box-shadow: 0 0 0 0.2rem rgba(158, 0, 0, 0.15);
+}
+
+.navbar-custom {
+  background-color: #9E0000 !important;
+  padding: 12px 0;
+}
+
+.navbar-custom .navbar-brand {
+  color: white !important;
+  font-weight: 600;
+  font-size: 1.4rem;
+}
+
+.navbar-custom .nav-link {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.navbar-custom .nav-link:hover {
+  color: white !important;
+}
+
+.badge-notification {
+  background-color: #FFA400 !important;
+  color: #1A1A1A !important;
 }
