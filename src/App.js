@@ -1,23 +1,65 @@
 // src/App.js
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import HomePage from './pages/HomePage';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';  // <-- Navigate imported
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import LoginPage from './pages/LoginPage';
+import HomePage from './pages/HomePage';                    // Admin Dashboard
+import EmployeeDashboard from './pages/EmployeeDashboard';
 import DeviceRegistrationPage from './pages/DeviceRegistrationPage';
+import DeviceManagementPage from './pages/DeviceManagementPage';
 import BudgetApprovalPage from './pages/BudgetApprovalPage';
-import OTPScreen from './pages/OTPScreen';
-import DeviceManagementPage from './pages/DeviceManagementPage'; // NEW import
+import EmployeeRegistrationPage from './pages/EmployeeRegistrationPage';
+import UnauthorizedPage from './pages/UnauthorizedPage';
+import OTPScreen from './pages/OTPScreen';                 // keep if needed
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/device-registration" element={<DeviceRegistrationPage />} />
-        <Route path="/device-management" element={<DeviceManagementPage />} /> {/* NEW */}
-        <Route path="/budget-approval" element={<BudgetApprovalPage />} />
-        <Route path="/otp-verification" element={<OTPScreen />} />
-      </Routes>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/unauthorized" element={<UnauthorizedPage />} />
+
+          {/* Admin Routes */}
+          <Route path="/admin/dashboard" element={
+            <ProtectedRoute allowedRoles={['Admin']}>
+              <HomePage />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/device-registration" element={
+            <ProtectedRoute allowedRoles={['Admin']}>
+              <DeviceRegistrationPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/device-management" element={
+            <ProtectedRoute allowedRoles={['Admin']}>
+              <DeviceManagementPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/budget-approval" element={
+            <ProtectedRoute allowedRoles={['Admin']}>
+              <BudgetApprovalPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/employee-registration" element={
+            <ProtectedRoute allowedRoles={['Admin']}>
+              <EmployeeRegistrationPage />
+            </ProtectedRoute>
+          } />
+
+          {/* Employee Routes */}
+          <Route path="/employee/dashboard" element={
+            <ProtectedRoute allowedRoles={['Employee']}>
+              <EmployeeDashboard />
+            </ProtectedRoute>
+          } />
+
+          {/* Default redirect */}
+          <Route path="/" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 

@@ -24,36 +24,22 @@ const BudgetApprovalPage = () => {
   // Approval modal state
   const [showModal, setShowModal] = useState(false);
   const [selectedBudgetId, setSelectedBudgetId] = useState(null);
-  const [approveEmployeeId, setApproveEmployeeId] = useState('');
   const [approveUsername, setApproveUsername] = useState('');
   const [otp, setOtp] = useState('');
   const [approving, setApproving] = useState(false);
   const [approveResult, setApproveResult] = useState(null);
 
-  // Fetch pending budgets with timeout
+  // Fetch pending budgets
   const fetchBudgets = async () => {
     setLoading(true);
     setError(null);
-    
-    // Create a timeout promise (10 seconds)
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Request timed out after 10 seconds')), 10000);
-    });
-
     try {
-      const response = await Promise.race([
-        axios.get(`${API_URL}/budget/all`),
-        timeoutPromise
-      ]);
-
-      console.log('API Response:', response.data);
-
+      const response = await axios.get(`${API_URL}/budget/all`);
       if (response.data.success) {
         const allBudgets = response.data.data || [];
-        const pendingBudgets = allBudgets.filter(b => 
+        const pendingBudgets = allBudgets.filter(b =>
           (b.status || b.Status) === 'PENDING'
         );
-        console.log('Pending budgets:', pendingBudgets);
         setBudgets(pendingBudgets);
       } else {
         setError('Failed to fetch budgets: ' + (response.data.message || 'Unknown error'));
@@ -115,14 +101,13 @@ const BudgetApprovalPage = () => {
     setSelectedBudgetId(budgetId);
     setShowModal(true);
     setApproveResult(null);
-    setApproveEmployeeId('');
     setApproveUsername('');
     setOtp('');
   };
 
-  // Submit OTP approval
+  // Submit OTP approval (simplified – only username and OTP)
   const handleApproveSubmit = async () => {
-    if (!approveEmployeeId || !approveUsername || !otp) {
+    if (!approveUsername || !otp) {
       setApproveResult({ success: false, message: 'Please fill in all fields' });
       return;
     }
@@ -137,7 +122,6 @@ const BudgetApprovalPage = () => {
       const response = await axios.post(
         `${API_URL}/budget/${selectedBudgetId}/approve-with-otp`,
         {
-          employeeId: parseInt(approveEmployeeId),
           username: approveUsername.trim(),
           otp: otp.trim()
         }
@@ -167,11 +151,7 @@ const BudgetApprovalPage = () => {
           Submit new budgets and approve pending ones using OTP from your registered device.
         </p>
 
-        {error && (
-          <Alert variant="danger" className="mb-3">
-            <strong>Error:</strong> {error}
-          </Alert>
-        )}
+        {error && <Alert variant="danger">{error}</Alert>}
 
         {/* Submit Budget Form */}
         <Card className="mb-4">
@@ -181,7 +161,7 @@ const BudgetApprovalPage = () => {
           </Card.Header>
           <Card.Body>
             {submitResult && (
-              <Alert variant={submitResult.success ? 'success' : 'danger'} className="mb-3">
+              <Alert variant={submitResult.success ? 'success' : 'danger'}>
                 {submitResult.message}
               </Alert>
             )}
@@ -244,7 +224,7 @@ const BudgetApprovalPage = () => {
                 </Col>
               </Row>
               <Button variant="primary" type="submit" disabled={submitting}>
-                {submitting ? <><Spinner as="span" animation="border" size="sm" className="me-2" /> Submitting...</> : 'Submit Budget'}
+                {submitting ? 'Submitting...' : 'Submit Budget'}
               </Button>
             </Form>
           </Card.Body>
@@ -252,57 +232,47 @@ const BudgetApprovalPage = () => {
 
         {/* Pending Budgets Table */}
         <Card>
-          <Card.Header>
-            Pending Budgets
-          </Card.Header>
+          <Card.Header>Pending Budgets</Card.Header>
           <Card.Body>
             {loading ? (
               <div className="text-center py-4">
                 <Spinner animation="border" variant="primary" />
                 <p className="mt-2">Loading pending budgets...</p>
               </div>
+            ) : budgets.length === 0 ? (
+              <Alert variant="info">No pending budgets.</Alert>
             ) : (
-              <>
-                {budgets.length === 0 ? (
-                  <Alert variant="info">No pending budgets.</Alert>
-                ) : (
-                  <Table striped bordered hover responsive>
-                    <thead>
-                      <tr>
-                        <th>ID</th>
-                        <th>Department</th>
-                        <th>Amount</th>
-                        <th>Description</th>
-                        <th>Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {budgets.map(budget => (
-                        <tr key={budget.id}>
-                          <td>{budget.id}</td>
-                          <td>{budget.department}</td>
-                          <td>{budget.amount}</td>
-                          <td>{budget.description}</td>
-                          <td>
-                            <Button
-                              variant="success"
-                              size="sm"
-                              onClick={() => handleApproveClick(budget.id)}
-                            >
-                              Approve
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </Table>
-                )}
-              </>
+              <Table striped bordered hover responsive>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Department</th>
+                    <th>Amount</th>
+                    <th>Description</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {budgets.map(budget => (
+                    <tr key={budget.id}>
+                      <td>{budget.id}</td>
+                      <td>{budget.department}</td>
+                      <td>{budget.amount}</td>
+                      <td>{budget.description}</td>
+                      <td>
+                        <Button variant="success" size="sm" onClick={() => handleApproveClick(budget.id)}>
+                          Approve
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
             )}
           </Card.Body>
         </Card>
 
-        {/* Approval Modal */}
+        {/* Approval Modal – Simplified */}
         {showModal && (
           <div className="modal-overlay" style={{
             position: 'fixed',
@@ -329,19 +299,10 @@ const BudgetApprovalPage = () => {
               )}
               <Form>
                 <Form.Group className="mb-3">
-                  <Form.Label>Employee ID</Form.Label>
-                  <Form.Control
-                    type="number"
-                    placeholder="Enter employee ID"
-                    value={approveEmployeeId}
-                    onChange={(e) => setApproveEmployeeId(e.target.value)}
-                  />
-                </Form.Group>
-                <Form.Group className="mb-3">
                   <Form.Label>Username</Form.Label>
                   <Form.Control
                     type="text"
-                    placeholder="Enter username"
+                    placeholder="Enter your username"
                     value={approveUsername}
                     onChange={(e) => setApproveUsername(e.target.value)}
                   />
