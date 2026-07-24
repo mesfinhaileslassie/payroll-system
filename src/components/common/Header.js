@@ -17,7 +17,10 @@ const Header = () => {
           <Nav className="ms-auto">
             <Nav.Link as={Link} to="/">Dashboard</Nav.Link>
             <Nav.Link as={Link} to="/device-registration">Register Device</Nav.Link>
+            {/* NEW: Device Management */}
+            <Nav.Link as={Link} to="/device-management">Device Management</Nav.Link>
             <Nav.Link as={Link} to="/budget-approval">Budget Approval</Nav.Link>
+            {/* Keep OTP Verify if needed; optionally remove */}
             <Nav.Link as={Link} to="/otp-verification">OTP Verify</Nav.Link>
           </Nav>
           <div className="d-flex align-items-center ms-3">

@@ -1,148 +1,161 @@
 // src/pages/BudgetApprovalPage.js
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Form, Button, Alert } from 'react-bootstrap';
+import { Container, Row, Col, Card, Form, Button, Alert, Spinner, Table } from 'react-bootstrap';
 import Layout from '../components/common/Layout';
-import { FaMoneyBillWave, FaShieldAlt, FaCheckCircle } from 'react-icons/fa';
+import { FaMoneyBillWave, FaCheckCircle } from 'react-icons/fa';
 import axios from 'axios';
 
-// Use localhost (not ngrok)
-const API_URL = 'http://localhost:5062/api';
+const API_URL = 'http://127.0.0.1:5062/api';
 
 const BudgetApprovalPage = () => {
+  // Budget list state
+  const [budgets, setBudgets] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Budget submission state
   const [amount, setAmount] = useState('');
   const [department, setDepartment] = useState('');
   const [description, setDescription] = useState('');
-  const [showOTP, setShowOTP] = useState(false);
-  const [otp, setOtp] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [result, setResult] = useState(null);
-  const [budgetId, setBudgetId] = useState(null);
-  const [secretKey, setSecretKey] = useState('');
+  const [employeeId, setEmployeeId] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [submitResult, setSubmitResult] = useState(null);
 
-  // Load secret key - use hardcoded value
+  // Approval modal state
+  const [showModal, setShowModal] = useState(false);
+  const [selectedBudgetId, setSelectedBudgetId] = useState(null);
+  const [approveEmployeeId, setApproveEmployeeId] = useState('');
+  const [approveUsername, setApproveUsername] = useState('');
+  const [otp, setOtp] = useState('');
+  const [approving, setApproving] = useState(false);
+  const [approveResult, setApproveResult] = useState(null);
+
+  // Fetch pending budgets with timeout
+  const fetchBudgets = async () => {
+    setLoading(true);
+    setError(null);
+    
+    // Create a timeout promise (10 seconds)
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Request timed out after 10 seconds')), 10000);
+    });
+
+    try {
+      const response = await Promise.race([
+        axios.get(`${API_URL}/budget/all`),
+        timeoutPromise
+      ]);
+
+      console.log('API Response:', response.data);
+
+      if (response.data.success) {
+        const allBudgets = response.data.data || [];
+        const pendingBudgets = allBudgets.filter(b => 
+          (b.status || b.Status) === 'PENDING'
+        );
+        console.log('Pending budgets:', pendingBudgets);
+        setBudgets(pendingBudgets);
+      } else {
+        setError('Failed to fetch budgets: ' + (response.data.message || 'Unknown error'));
+      }
+    } catch (err) {
+      console.error('Error fetching budgets:', err);
+      setError(err.message || 'Network error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    // Use the secret key from your database
-    setSecretKey('941573ec46034b7e9e0c899dc7710183');
-    console.log('✅ Secret Key loaded:', '941573ec46034b7e9e0c899dc7710183');
+    fetchBudgets();
   }, []);
 
-  const handleSubmitBudget = async () => {
-    if (!amount || !department || !description) {
-      setResult({ success: false, message: 'Please fill in all fields' });
+  // Submit new budget
+  const handleSubmitBudget = async (e) => {
+    e.preventDefault();
+    if (!amount || !department || !description || !employeeId) {
+      setSubmitResult({ success: false, message: 'Please fill in all fields' });
+      return;
+    }
+    const userId = parseInt(employeeId);
+    if (isNaN(userId) || userId <= 0) {
+      setSubmitResult({ success: false, message: 'Enter a valid Employee ID (positive number)' });
       return;
     }
 
-    setIsSubmitting(true);
-    setResult(null);
-
+    setSubmitting(true);
+    setSubmitResult(null);
     try {
       const response = await axios.post(`${API_URL}/budget/submit`, {
         amount: parseFloat(amount),
         department,
         description,
-        userId: 1
+        userId
       });
-
-      console.log('📡 Budget Submit Response:', response.data);
-
       if (response.data.success) {
-        setBudgetId(response.data.approvalId);
-        setShowOTP(true);
-        setResult({
-          success: true,
-          message: `Budget submitted. Approval ID: ${response.data.approvalId}. Enter OTP to approve.`
-        });
+        setSubmitResult({ success: true, message: `✅ Budget submitted! Approval ID: ${response.data.approvalId}` });
+        setAmount('');
+        setDepartment('');
+        setDescription('');
+        setEmployeeId('');
+        fetchBudgets();
       } else {
-        setResult({
-          success: false,
-          message: response.data.message || 'Submission failed'
-        });
+        setSubmitResult({ success: false, message: response.data.message || 'Submission failed' });
       }
-    } catch (error) {
-      console.error('❌ Error:', error);
-      setResult({
-        success: false,
-        message: error.response?.data?.message || 'Error submitting budget'
-      });
+    } catch (err) {
+      console.error('Error submitting budget:', err);
+      setSubmitResult({ success: false, message: err.response?.data?.message || err.message });
     } finally {
-      setIsSubmitting(false);
+      setSubmitting(false);
     }
   };
 
-  const handleVerifyOTP = async () => {
-    if (!otp || otp.length < 6) {
-      setResult({ success: false, message: 'Please enter a valid 6-digit OTP' });
+  // Open approval modal
+  const handleApproveClick = (budgetId) => {
+    setSelectedBudgetId(budgetId);
+    setShowModal(true);
+    setApproveResult(null);
+    setApproveEmployeeId('');
+    setApproveUsername('');
+    setOtp('');
+  };
+
+  // Submit OTP approval
+  const handleApproveSubmit = async () => {
+    if (!approveEmployeeId || !approveUsername || !otp) {
+      setApproveResult({ success: false, message: 'Please fill in all fields' });
+      return;
+    }
+    if (otp.length !== 6 || !/^\d{6}$/.test(otp)) {
+      setApproveResult({ success: false, message: 'OTP must be 6 digits' });
       return;
     }
 
-    if (!secretKey) {
-      setResult({ success: false, message: 'Secret key not loaded. Please refresh the page.' });
-      return;
-    }
-
-    setIsSubmitting(true);
-    setResult(null);
-
+    setApproving(true);
+    setApproveResult(null);
     try {
-      console.log('🔑 Verifying OTP with Secret Key:', secretKey);
-      console.log('📱 OTP entered:', otp);
-      console.log('📡 API URL:', `${API_URL}/device/verify-otp`);
-
-      // Step 1: Verify OTP with backend
-      const response = await axios.post(`${API_URL}/device/verify-otp`, {
-        secretKey: secretKey,
-        token: otp
-      });
-
-      console.log('📡 OTP Verification Response:', response.data);
-
-      if (response.data.valid) {
-        // Step 2: OTP is valid - approve budget
-        if (budgetId) {
-          const approveResponse = await axios.post(`${API_URL}/budget/${budgetId}/approve`, {
-            otp: otp
-          });
-
-          console.log('📡 Budget Approval Response:', approveResponse.data);
-
-          if (approveResponse.data.success) {
-            setResult({ 
-              success: true, 
-              message: '✅ OTP Verified! Budget approved successfully.' 
-            });
-            setShowOTP(false);
-            setOtp('');
-            setAmount('');
-            setDepartment('');
-            setDescription('');
-          } else {
-            setResult({ 
-              success: false, 
-              message: approveResponse.data.message || 'Budget approval failed' 
-            });
-          }
-        } else {
-          setResult({ 
-            success: false, 
-            message: 'Budget ID not found. Please resubmit.' 
-          });
+      const response = await axios.post(
+        `${API_URL}/budget/${selectedBudgetId}/approve-with-otp`,
+        {
+          employeeId: parseInt(approveEmployeeId),
+          username: approveUsername.trim(),
+          otp: otp.trim()
         }
+      );
+      if (response.data.success) {
+        setApproveResult({ success: true, message: '✅ Budget approved successfully!' });
+        setTimeout(() => {
+          setShowModal(false);
+          fetchBudgets();
+        }, 1500);
       } else {
-        setResult({ 
-          success: false, 
-          message: '❌ Invalid OTP. Please generate a new token in the Soft Token app.' 
-        });
-        setOtp('');
+        setApproveResult({ success: false, message: response.data.message || 'Approval failed' });
       }
-    } catch (error) {
-      console.error('❌ Error:', error);
-      console.error('❌ Error Response:', error.response);
-      setResult({ 
-        success: false, 
-        message: error.response?.data?.message || 'Error verifying OTP' 
-      });
+    } catch (err) {
+      console.error('Error approving budget:', err);
+      setApproveResult({ success: false, message: err.response?.data?.message || err.message });
     } finally {
-      setIsSubmitting(false);
+      setApproving(false);
     }
   };
 
@@ -151,138 +164,234 @@ const BudgetApprovalPage = () => {
       <Container>
         <h2 className="mb-4">Budget Approval</h2>
         <p className="text-muted mb-4">
-          Submit a budget for approval with OTP verification from your Soft Token app
+          Submit new budgets and approve pending ones using OTP from your registered device.
         </p>
 
-        <Row>
-          <Col lg={8} className="mx-auto">
-            <Card>
-              <Card.Header>
-                <FaMoneyBillWave className="me-2" />
-                Budget Request
-              </Card.Header>
-              <Card.Body>
-                {result && (
-                  <Alert variant={result.success ? 'success' : 'danger'} className="mb-3">
-                    {result.success && <FaCheckCircle className="me-2" />}
-                    {result.message}
-                  </Alert>
-                )}
+        {error && (
+          <Alert variant="danger" className="mb-3">
+            <strong>Error:</strong> {error}
+          </Alert>
+        )}
 
-                {!showOTP ? (
-                  <Form>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Amount (ETB)</Form.Label>
-                      <Form.Control
-                        type="number"
-                        placeholder="Enter budget amount"
-                        value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
-                      />
-                    </Form.Group>
-
-                    <Form.Group className="mb-3">
-                      <Form.Label>Department</Form.Label>
-                      <Form.Select
-                        value={department}
-                        onChange={(e) => setDepartment(e.target.value)}
-                      >
-                        <option value="">Select department</option>
-                        <option value="IT">IT</option>
-                        <option value="Finance">Finance</option>
-                        <option value="HR">HR</option>
-                        <option value="Operations">Operations</option>
-                        <option value="Marketing">Marketing</option>
-                      </Form.Select>
-                    </Form.Group>
-
-                    <Form.Group className="mb-3">
-                      <Form.Label>Description</Form.Label>
-                      <Form.Control
-                        as="textarea"
-                        rows={3}
-                        placeholder="Describe the budget request"
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                      />
-                    </Form.Group>
-
-                    <Button
-                      variant="primary"
-                      onClick={handleSubmitBudget}
-                      disabled={isSubmitting}
-                      className="w-100"
+        {/* Submit Budget Form */}
+        <Card className="mb-4">
+          <Card.Header>
+            <FaMoneyBillWave className="me-2" />
+            Submit New Budget
+          </Card.Header>
+          <Card.Body>
+            {submitResult && (
+              <Alert variant={submitResult.success ? 'success' : 'danger'} className="mb-3">
+                {submitResult.message}
+              </Alert>
+            )}
+            <Form onSubmit={handleSubmitBudget}>
+              <Row>
+                <Col md={3}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Employee ID</Form.Label>
+                    <Form.Control
+                      type="number"
+                      placeholder="Enter employee ID"
+                      value={employeeId}
+                      onChange={(e) => setEmployeeId(e.target.value)}
+                      required
+                    />
+                  </Form.Group>
+                </Col>
+                <Col md={3}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Amount (ETB)</Form.Label>
+                    <Form.Control
+                      type="number"
+                      step="0.01"
+                      placeholder="Amount"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      required
+                    />
+                  </Form.Group>
+                </Col>
+                <Col md={3}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Department</Form.Label>
+                    <Form.Select
+                      value={department}
+                      onChange={(e) => setDepartment(e.target.value)}
+                      required
                     >
-                      {isSubmitting ? 'Submitting...' : 'Submit for Approval'}
-                    </Button>
-                  </Form>
+                      <option value="">Select</option>
+                      <option value="IT">IT</option>
+                      <option value="Finance">Finance</option>
+                      <option value="HR">HR</option>
+                      <option value="Operations">Operations</option>
+                      <option value="Marketing">Marketing</option>
+                    </Form.Select>
+                  </Form.Group>
+                </Col>
+                <Col md={3}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Description</Form.Label>
+                    <Form.Control
+                      as="textarea"
+                      rows={1}
+                      placeholder="Brief description"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      required
+                    />
+                  </Form.Group>
+                </Col>
+              </Row>
+              <Button variant="primary" type="submit" disabled={submitting}>
+                {submitting ? <><Spinner as="span" animation="border" size="sm" className="me-2" /> Submitting...</> : 'Submit Budget'}
+              </Button>
+            </Form>
+          </Card.Body>
+        </Card>
+
+        {/* Pending Budgets Table */}
+        <Card>
+          <Card.Header>
+            Pending Budgets
+          </Card.Header>
+          <Card.Body>
+            {loading ? (
+              <div className="text-center py-4">
+                <Spinner animation="border" variant="primary" />
+                <p className="mt-2">Loading pending budgets...</p>
+              </div>
+            ) : (
+              <>
+                {budgets.length === 0 ? (
+                  <Alert variant="info">No pending budgets.</Alert>
                 ) : (
-                  <div>
-                    <Alert variant="info">
-                      <FaShieldAlt className="me-2" />
-                      Enter the OTP from your Soft Token app to approve this budget.
-                      <br />
-                      <small className="text-muted">
-                        Open your Soft Token app, go to Token screen, and generate a token.
-                      </small>
-                    </Alert>
-
-                    <Form>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Enter OTP from Soft Token App</Form.Label>
-                        <Form.Control
-                          type="text"
-                          placeholder="000000"
-                          maxLength={6}
-                          value={otp}
-                          onChange={(e) => {
-                            const value = e.target.value.replace(/\D/g, '');
-                            setOtp(value);
-                            setResult(null);
-                          }}
-                          style={{
-                            fontSize: '24px',
-                            textAlign: 'center',
-                            letterSpacing: '8px',
-                            padding: '12px'
-                          }}
-                        />
-                        <Form.Text className="text-muted">
-                          The OTP expires in 30 seconds
-                        </Form.Text>
-                      </Form.Group>
-
-                      <div className="d-flex gap-2">
-                        <Button
-                          variant="success"
-                          onClick={handleVerifyOTP}
-                          disabled={isSubmitting || otp.length < 6}
-                          className="flex-grow-1"
-                        >
-                          {isSubmitting ? 'Verifying...' : 'Approve Budget'}
-                        </Button>
-                      </div>
-                    </Form>
-
-                    <div className="text-center mt-3">
-                      <Button
-                        variant="outline-secondary"
-                        size="sm"
-                        onClick={() => {
-                          setShowOTP(false);
-                          setOtp('');
-                          setResult(null);
-                        }}
-                      >
-                        Back
-                      </Button>
-                    </div>
-                  </div>
+                  <Table striped bordered hover responsive>
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Department</th>
+                        <th>Amount</th>
+                        <th>Description</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {budgets.map(budget => (
+                        <tr key={budget.id}>
+                          <td>{budget.id}</td>
+                          <td>{budget.department}</td>
+                          <td>{budget.amount}</td>
+                          <td>{budget.description}</td>
+                          <td>
+                            <Button
+                              variant="success"
+                              size="sm"
+                              onClick={() => handleApproveClick(budget.id)}
+                            >
+                              Approve
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
                 )}
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
+              </>
+            )}
+          </Card.Body>
+        </Card>
+
+        {/* Approval Modal */}
+        {showModal && (
+          <div className="modal-overlay" style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 1000
+          }}>
+            <div style={{
+              background: 'white',
+              padding: '30px',
+              borderRadius: '12px',
+              maxWidth: '500px',
+              width: '90%',
+              boxShadow: '0 5px 15px rgba(0,0,0,0.3)'
+            }}>
+              <h4 className="mb-3">Approve Budget #{selectedBudgetId}</h4>
+              {approveResult && (
+                <Alert variant={approveResult.success ? 'success' : 'danger'}>
+                  {approveResult.message}
+                </Alert>
+              )}
+              <Form>
+                <Form.Group className="mb-3">
+                  <Form.Label>Employee ID</Form.Label>
+                  <Form.Control
+                    type="number"
+                    placeholder="Enter employee ID"
+                    value={approveEmployeeId}
+                    onChange={(e) => setApproveEmployeeId(e.target.value)}
+                  />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Username</Form.Label>
+                  <Form.Control
+                    type="text"
+                    placeholder="Enter username"
+                    value={approveUsername}
+                    onChange={(e) => setApproveUsername(e.target.value)}
+                  />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>OTP (6 digits)</Form.Label>
+                  <Form.Control
+                    type="text"
+                    placeholder="000000"
+                    maxLength={6}
+                    value={otp}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '');
+                      setOtp(val);
+                    }}
+                    style={{
+                      fontSize: '24px',
+                      textAlign: 'center',
+                      letterSpacing: '8px'
+                    }}
+                  />
+                  <Form.Text className="text-muted">
+                    Open your Soft Token app and copy the current token.
+                  </Form.Text>
+                </Form.Group>
+                <div className="d-flex gap-2">
+                  <Button
+                    variant="success"
+                    onClick={handleApproveSubmit}
+                    disabled={approving}
+                    className="flex-grow-1"
+                  >
+                    {approving ? (
+                      <>
+                        <Spinner as="span" animation="border" size="sm" className="me-2" />
+                        Approving...
+                      </>
+                    ) : 'Approve'}
+                  </Button>
+                  <Button
+                    variant="outline-secondary"
+                    onClick={() => setShowModal(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </Form>
+            </div>
+          </div>
+        )}
       </Container>
     </Layout>
   );
