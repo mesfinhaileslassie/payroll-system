@@ -6,6 +6,226 @@ import axios from 'axios';
 
 const API_URL = 'http://127.0.0.1:5062/api';
 
+// Same Bootstrap color palette as before:
+// primary #0d6efd | success #198754 | danger #dc3545 | secondary #6c757d
+// Only visual structure/spacing/typography is new — no functional classes touched.
+const erpStyles = `
+.erp-page {
+  padding-top: 2rem;
+  padding-bottom: 3rem;
+}
+
+.erp-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.erp-header-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(13, 110, 253, 0.1);
+  color: #0d6efd;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.erp-header h2 {
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #212529;
+}
+
+.erp-header p {
+  margin: 0;
+  color: #6c757d;
+  font-size: 0.925rem;
+}
+
+.erp-alert {
+  border: none;
+  border-left: 4px solid transparent;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.erp-alert.alert-success {
+  border-left-color: #198754;
+}
+
+.erp-alert.alert-danger {
+  border-left-color: #dc3545;
+}
+
+.erp-activation-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.erp-activation-code {
+  display: inline-block;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  background: rgba(25, 135, 84, 0.12);
+  color: #146c43;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+}
+
+.erp-card {
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.erp-card .card-body {
+  padding: 2rem;
+}
+
+.erp-section {
+  margin-bottom: 1.75rem;
+}
+
+.erp-section:last-of-type {
+  margin-bottom: 0.5rem;
+}
+
+.erp-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6c757d;
+  margin-bottom: 1rem;
+}
+
+.erp-section-title .erp-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: #0d6efd;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.erp-divider {
+  border: none;
+  border-top: 1px dashed rgba(0, 0, 0, 0.12);
+  margin: 1.75rem 0;
+}
+
+.erp-form-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #343a40;
+  margin-bottom: 0.35rem;
+}
+
+.erp-form-control,
+.erp-card .form-control,
+.erp-card .form-select {
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.925rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.erp-card .form-control:focus,
+.erp-card .form-select:focus {
+  border-color: #86b7fe;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+}
+
+.erp-device-box {
+  background: #f8f9fa;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 12px;
+  padding: 1.25rem 1.25rem 0.5rem;
+}
+
+.erp-device-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  margin-left: 0.5rem;
+  vertical-align: middle;
+}
+
+.erp-device-status.text-success {
+  background: rgba(25, 135, 84, 0.12);
+  color: #146c43 !important;
+}
+
+.erp-device-status.text-danger {
+  background: rgba(220, 53, 69, 0.12);
+  color: #b02a37 !important;
+}
+
+.erp-check-btn {
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.825rem;
+}
+
+.erp-footer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.erp-submit-btn {
+  border-radius: 8px;
+  font-weight: 600;
+  padding: 0.55rem 1.75rem;
+  box-shadow: 0 2px 8px rgba(13, 110, 253, 0.25);
+}
+
+.erp-submit-btn:disabled {
+  box-shadow: none;
+}
+
+@media (max-width: 767.98px) {
+  .erp-card .card-body {
+    padding: 1.25rem;
+  }
+
+  .erp-footer-actions {
+    justify-content: stretch;
+  }
+
+  .erp-submit-btn {
+    width: 100%;
+  }
+}
+`;
+
 const EmployeeRegistrationPage = () => {
   const [formData, setFormData] = useState({
     username: '',
@@ -118,109 +338,160 @@ const EmployeeRegistrationPage = () => {
 
   return (
     <Layout>
-      <Container>
-        <h2 className="mb-4">Register New Employee</h2>
-        {result && <Alert variant={result.success ? 'success' : 'danger'}>{result.message}</Alert>}
-        {activationCode && (
-          <Alert variant="success">
-            <strong>Activation Code:</strong> {activationCode} – Give this code to the employee to activate their device.
+      <style>{erpStyles}</style>
+      <Container className="erp-page">
+        <div className="erp-header">
+          <span className="erp-header-icon" aria-hidden="true">👤</span>
+          <div>
+            <h2>Register New Employee</h2>
+            <p>Create an account, assign a role, and pair a Soft Token device.</p>
+          </div>
+        </div>
+
+        {result && (
+          <Alert className="erp-alert" variant={result.success ? 'success' : 'danger'}>
+            {result.message}
           </Alert>
         )}
-        <Card>
+
+        {activationCode && (
+          <Alert className="erp-alert erp-activation-alert" variant="success">
+            <span aria-hidden="true">🔑</span>
+            <span>
+              <strong>Activation Code:</strong> <span className="erp-activation-code">{activationCode}</span> – Give this code to the employee to activate their device.
+            </span>
+          </Alert>
+        )}
+
+        <Card className="erp-card">
           <Card.Body>
             <Form onSubmit={handleSubmit}>
-              <Row>
-                <Col md={4}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Username *</Form.Label>
-                    <Form.Control name="username" value={formData.username} onChange={handleChange} required />
-                  </Form.Group>
-                </Col>
-                <Col md={4}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Email *</Form.Label>
-                    <Form.Control name="email" type="email" value={formData.email} onChange={handleChange} required />
-                  </Form.Group>
-                </Col>
-                <Col md={4}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Password *</Form.Label>
-                    <Form.Control name="password" type="password" value={formData.password} onChange={handleChange} required />
-                  </Form.Group>
-                </Col>
-              </Row>
-              <Row>
-                <Col md={3}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>First Name</Form.Label>
-                    <Form.Control name="firstName" value={formData.firstName} onChange={handleChange} />
-                  </Form.Group>
-                </Col>
-                <Col md={3}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Last Name</Form.Label>
-                    <Form.Control name="lastName" value={formData.lastName} onChange={handleChange} />
-                  </Form.Group>
-                </Col>
-                <Col md={3}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Phone</Form.Label>
-                    <Form.Control name="phone" value={formData.phone} onChange={handleChange} />
-                  </Form.Group>
-                </Col>
-                <Col md={3}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Gender</Form.Label>
-                    <Form.Select name="gender" value={formData.gender} onChange={handleChange}>
-                      <option value="">Select</option>
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                    </Form.Select>
-                  </Form.Group>
-                </Col>
-              </Row>
-              <Row>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Position *</Form.Label>
-                    <Form.Select name="position" value={formData.position} onChange={handleChange} required>
-                      <option value="">Select position</option>
-                      <option value="Payroll Officer">Payroll Officer</option>
-                      <option value="Finance Manager">Finance Manager</option>
-                    </Form.Select>
-                  </Form.Group>
-                </Col>
-              </Row>
-              <hr />
-              <h5>Device Registration</h5>
-              <Row>
-                <Col md={8}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Device Code (from employee's Soft Token app)</Form.Label>
-                    <Form.Control as="textarea" rows={3} name="deviceCode" value={formData.deviceCode} onChange={handleChange} />
-                  </Form.Group>
-                </Col>
-                <Col md={4}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Device Name</Form.Label>
-                    <Form.Control name="deviceName" value={formData.deviceName} onChange={handleChange} placeholder="Optional" />
-                  </Form.Group>
-                  <Button
-                    variant="outline-secondary"
-                    size="sm"
-                    onClick={checkDevice}
-                    disabled={!formData.deviceCode || checkingDevice}
-                    className="mt-2"
-                  >
-                    {checkingDevice ? <Spinner as="span" animation="border" size="sm" /> : 'Check Device'}
-                  </Button>
-                  {deviceValid === true && <span className="text-success ms-2">✅ Available</span>}
-                  {deviceValid === false && <span className="text-danger ms-2">❌ Already Registered</span>}
-                </Col>
-              </Row>
-              <Button type="submit" variant="primary" disabled={loading || (formData.deviceCode && deviceValid === false)}>
-                {loading ? 'Registering...' : 'Register Employee'}
-              </Button>
+
+              <div className="erp-section">
+                <div className="erp-section-title">
+                  <span className="erp-badge">1</span> Account Credentials
+                </div>
+                <Row>
+                  <Col md={4}>
+                    <Form.Group className="mb-3">
+                      <Form.Label className="erp-form-label">Username *</Form.Label>
+                      <Form.Control name="username" value={formData.username} onChange={handleChange} required />
+                    </Form.Group>
+                  </Col>
+                  <Col md={4}>
+                    <Form.Group className="mb-3">
+                      <Form.Label className="erp-form-label">Email *</Form.Label>
+                      <Form.Control name="email" type="email" value={formData.email} onChange={handleChange} required />
+                    </Form.Group>
+                  </Col>
+                  <Col md={4}>
+                    <Form.Group className="mb-3">
+                      <Form.Label className="erp-form-label">Password *</Form.Label>
+                      <Form.Control name="password" type="password" value={formData.password} onChange={handleChange} required />
+                    </Form.Group>
+                  </Col>
+                </Row>
+              </div>
+
+              <div className="erp-section">
+                <div className="erp-section-title">
+                  <span className="erp-badge">2</span> Personal Details
+                </div>
+                <Row>
+                  <Col md={3}>
+                    <Form.Group className="mb-3">
+                      <Form.Label className="erp-form-label">First Name</Form.Label>
+                      <Form.Control name="firstName" value={formData.firstName} onChange={handleChange} />
+                    </Form.Group>
+                  </Col>
+                  <Col md={3}>
+                    <Form.Group className="mb-3">
+                      <Form.Label className="erp-form-label">Last Name</Form.Label>
+                      <Form.Control name="lastName" value={formData.lastName} onChange={handleChange} />
+                    </Form.Group>
+                  </Col>
+                  <Col md={3}>
+                    <Form.Group className="mb-3">
+                      <Form.Label className="erp-form-label">Phone</Form.Label>
+                      <Form.Control name="phone" value={formData.phone} onChange={handleChange} />
+                    </Form.Group>
+                  </Col>
+                  <Col md={3}>
+                    <Form.Group className="mb-3">
+                      <Form.Label className="erp-form-label">Gender</Form.Label>
+                      <Form.Select name="gender" value={formData.gender} onChange={handleChange}>
+                        <option value="">Select</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                      </Form.Select>
+                    </Form.Group>
+                  </Col>
+                </Row>
+              </div>
+
+              <div className="erp-section">
+                <div className="erp-section-title">
+                  <span className="erp-badge">3</span> Role
+                </div>
+                <Row>
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label className="erp-form-label">Position *</Form.Label>
+                      <Form.Select name="position" value={formData.position} onChange={handleChange} required>
+                        <option value="">Select position</option>
+                        <option value="Payroll Officer">Payroll Officer</option>
+                        <option value="Finance Manager">Finance Manager</option>
+                      </Form.Select>
+                    </Form.Group>
+                  </Col>
+                </Row>
+              </div>
+
+              <hr className="erp-divider" />
+
+              <div className="erp-section">
+                <div className="erp-section-title">
+                  <span className="erp-badge">4</span> Device Registration
+                </div>
+                <div className="erp-device-box">
+                  <Row>
+                    <Col md={8}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="erp-form-label">Device Code (from employee's Soft Token app)</Form.Label>
+                        <Form.Control as="textarea" rows={3} name="deviceCode" value={formData.deviceCode} onChange={handleChange} />
+                      </Form.Group>
+                    </Col>
+                    <Col md={4}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="erp-form-label">Device Name</Form.Label>
+                        <Form.Control name="deviceName" value={formData.deviceName} onChange={handleChange} placeholder="Optional" />
+                      </Form.Group>
+                      <Button
+                        variant="outline-secondary"
+                        size="sm"
+                        onClick={checkDevice}
+                        disabled={!formData.deviceCode || checkingDevice}
+                        className="mt-2 erp-check-btn"
+                      >
+                        {checkingDevice ? <Spinner as="span" animation="border" size="sm" /> : 'Check Device'}
+                      </Button>
+                      {deviceValid === true && <span className="text-success erp-device-status">✅ Available</span>}
+                      {deviceValid === false && <span className="text-danger erp-device-status">❌ Already Registered</span>}
+                    </Col>
+                  </Row>
+                </div>
+              </div>
+
+              <div className="erp-footer-actions">
+                <Button
+                  type="submit"
+                  variant="primary"
+                  className="erp-submit-btn"
+                  disabled={loading || (formData.deviceCode && deviceValid === false)}
+                >
+                  {loading ? 'Registering...' : 'Register Employee'}
+                </Button>
+              </div>
             </Form>
           </Card.Body>
         </Card>
