@@ -1,17 +1,18 @@
 // src/App.js
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';  // <-- Navigate imported
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
-import HomePage from './pages/HomePage';                    // Admin Dashboard
+import HomePage from './pages/HomePage'; // Admin Dashboard
 import EmployeeDashboard from './pages/EmployeeDashboard';
+import PayrollOfficerDashboard from './pages/PayrollOfficerDashboard';
+import FinanceManagerDashboard from './pages/FinanceManagerDashboard';
 import DeviceRegistrationPage from './pages/DeviceRegistrationPage';
 import DeviceManagementPage from './pages/DeviceManagementPage';
 import BudgetApprovalPage from './pages/BudgetApprovalPage';
 import EmployeeRegistrationPage from './pages/EmployeeRegistrationPage';
 import UnauthorizedPage from './pages/UnauthorizedPage';
-import OTPScreen from './pages/OTPScreen';                 // keep if needed
 
 function App() {
   return (
@@ -38,7 +39,7 @@ function App() {
             </ProtectedRoute>
           } />
           <Route path="/admin/budget-approval" element={
-            <ProtectedRoute allowedRoles={['Admin']}>
+            <ProtectedRoute allowedRoles={['Admin', 'PayrollOfficer', 'FinanceManager']}>
               <BudgetApprovalPage />
             </ProtectedRoute>
           } />
@@ -48,7 +49,21 @@ function App() {
             </ProtectedRoute>
           } />
 
-          {/* Employee Routes */}
+          {/* Payroll Officer Dashboard */}
+          <Route path="/payroll-officer/dashboard" element={
+            <ProtectedRoute allowedRoles={['PayrollOfficer']}>
+              <PayrollOfficerDashboard />
+            </ProtectedRoute>
+          } />
+
+          {/* Finance Manager Dashboard */}
+          <Route path="/finance-manager/dashboard" element={
+            <ProtectedRoute allowedRoles={['FinanceManager']}>
+              <FinanceManagerDashboard />
+            </ProtectedRoute>
+          } />
+
+          {/* Employee Dashboard */}
           <Route path="/employee/dashboard" element={
             <ProtectedRoute allowedRoles={['Employee']}>
               <EmployeeDashboard />

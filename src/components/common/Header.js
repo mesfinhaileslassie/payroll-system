@@ -33,8 +33,22 @@ const Header = () => {
                 <Nav.Link as={Link} to="/admin/employee-registration">Register Employee</Nav.Link>
               </>
             )}
+            {user?.role === 'PayrollOfficer' && (
+              <>
+                <Nav.Link as={Link} to="/payroll-officer/dashboard">Dashboard</Nav.Link>
+                <Nav.Link as={Link} to="/admin/budget-approval">Submit Budget</Nav.Link>
+              </>
+            )}
+            {user?.role === 'FinanceManager' && (
+              <>
+                <Nav.Link as={Link} to="/finance-manager/dashboard">Dashboard</Nav.Link>
+                <Nav.Link as={Link} to="/admin/budget-approval">Review Budgets</Nav.Link>
+              </>
+            )}
             {user?.role === 'Employee' && (
-              <Nav.Link as={Link} to="/employee/dashboard">Dashboard</Nav.Link>
+              <>
+                <Nav.Link as={Link} to="/employee/dashboard">Dashboard</Nav.Link>
+              </>
             )}
             {!user && (
               <Nav.Link as={Link} to="/login">Login</Nav.Link>

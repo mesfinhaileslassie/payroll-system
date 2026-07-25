@@ -24,8 +24,14 @@ const LoginPage = () => {
       if (response.data.success) {
         const { userId, username, role, token } = response.data;
         login({ userId, username, role, token });
+        
+        // ✅ Role-based redirection
         if (role === 'Admin') {
           navigate('/admin/dashboard');
+        } else if (role === 'PayrollOfficer') {
+          navigate('/payroll-officer/dashboard');
+        } else if (role === 'FinanceManager') {
+          navigate('/finance-manager/dashboard');
         } else {
           navigate('/employee/dashboard');
         }
@@ -41,7 +47,7 @@ const LoginPage = () => {
 
   return (
     <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh' }}>
-      <Card style={{ width: '400px' }}>
+      <Card style={{ width: '400px' }} className="shadow">
         <Card.Body>
           <h3 className="text-center mb-4">Payroll System</h3>
           {error && <Alert variant="danger">{error}</Alert>}
