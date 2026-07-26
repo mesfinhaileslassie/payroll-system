@@ -6,9 +6,6 @@ import axios from 'axios';
 
 const API_URL = 'http://127.0.0.1:5062/api';
 
-// Same Bootstrap color palette as before:
-// primary #0d6efd | success #198754 | danger #dc3545 | secondary #6c757d
-// Only visual structure/spacing/typography is new — no functional classes touched.
 const erpStyles = `
 .erp-page {
   padding-top: 2rem;
@@ -242,18 +239,16 @@ const EmployeeRegistrationPage = () => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [activationCode, setActivationCode] = useState('');
-  const [deviceValid, setDeviceValid] = useState(null); // null = unchecked, true = valid, false = invalid
+  const [deviceValid, setDeviceValid] = useState(null);
   const [checkingDevice, setCheckingDevice] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    // Reset device validation when code changes
     if (e.target.name === 'deviceCode') {
       setDeviceValid(null);
     }
   };
 
-  // Extract installation ID from device code JSON
   const extractInstallationId = (code) => {
     try {
       const parsed = JSON.parse(code);
@@ -263,7 +258,6 @@ const EmployeeRegistrationPage = () => {
     }
   };
 
-  // Check if device is already registered
   const checkDevice = async () => {
     const installationId = extractInstallationId(formData.deviceCode);
     if (!installationId) {
@@ -291,7 +285,6 @@ const EmployeeRegistrationPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validate device before submitting
     if (formData.deviceCode) {
       const installationId = extractInstallationId(formData.deviceCode);
       if (installationId) {
@@ -431,7 +424,7 @@ const EmployeeRegistrationPage = () => {
 
               <div className="erp-section">
                 <div className="erp-section-title">
-                  <span className="erp-badge">3</span> Role
+                  <span className="erp-badge">3</span> Role / Position
                 </div>
                 <Row>
                   <Col md={6}>
@@ -439,6 +432,7 @@ const EmployeeRegistrationPage = () => {
                       <Form.Label className="erp-form-label">Position *</Form.Label>
                       <Form.Select name="position" value={formData.position} onChange={handleChange} required>
                         <option value="">Select position</option>
+                        <option value="Normal Employee">Normal Employee</option>
                         <option value="Payroll Officer">Payroll Officer</option>
                         <option value="Finance Manager">Finance Manager</option>
                       </Form.Select>
