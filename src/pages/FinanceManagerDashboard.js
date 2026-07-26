@@ -1,10 +1,9 @@
 // src/pages/FinanceManagerDashboard.js
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Table, Badge, Spinner, Modal, Form, Alert } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
-import { FaUsers, FaMoneyBillWave, FaCheckCircle, FaClock, FaTimesCircle, FaPlus } from 'react-icons/fa';
+import { FaUsers, FaMoneyBillWave, FaCheckCircle, FaClock, FaTimesCircle, FaSync } from 'react-icons/fa';
 
 const API_URL = 'http://127.0.0.1:5062/api';
 
@@ -19,6 +18,7 @@ const FinanceManagerDashboard = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [amount, setAmount] = useState('');
+  const [paymentMonth, setPaymentMonth] = useState('');
   const [otp, setOtp] = useState('');
   const [paying, setPaying] = useState(false);
   const [payResult, setPayResult] = useState(null);
@@ -31,12 +31,11 @@ const FinanceManagerDashboard = () => {
     setLoading(true);
     setError(null);
     try {
-      // Fetch employees
-      const empRes = await axios.get(`${API_URL}/users/employees`);
+      const [empRes, payRes] = await Promise.all([
+        axios.get(`${API_URL}/users/employees`),
+        axios.get(`${API_URL}/salary/all`)
+      ]);
       setEmployees(empRes.data.data || []);
-
-      // Fetch salary payments (for recent activity)
-      const payRes = await axios.get(`${API_URL}/salary/all`);
       setSalaryPayments(payRes.data.data || []);
     } catch (err) {
       console.error(err);
@@ -46,9 +45,15 @@ const FinanceManagerDashboard = () => {
     }
   };
 
+  const getCurrentMonth = () => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  };
+
   const handlePayClick = (employee) => {
     setSelectedEmployee(employee);
     setAmount('');
+    setPaymentMonth(getCurrentMonth());
     setOtp('');
     setPayResult(null);
     setShowModal(true);
@@ -57,6 +62,10 @@ const FinanceManagerDashboard = () => {
   const handlePaySubmit = async () => {
     if (!amount || parseFloat(amount) <= 0) {
       setPayResult({ success: false, message: 'Please enter a valid amount' });
+      return;
+    }
+    if (!paymentMonth || !/^\d{4}-\d{2}$/.test(paymentMonth)) {
+      setPayResult({ success: false, message: 'Please select a valid month (YYYY-MM)' });
       return;
     }
     if (!otp || otp.length !== 6 || !/^\d{6}$/.test(otp)) {
@@ -70,6 +79,7 @@ const FinanceManagerDashboard = () => {
       const response = await axios.post(`${API_URL}/salary/pay`, {
         employeeId: selectedEmployee.id,
         amount: parseFloat(amount),
+        paymentMonth: paymentMonth,
         username: user.username,
         otp: otp.trim()
       });
@@ -99,10 +109,15 @@ const FinanceManagerDashboard = () => {
 
   return (
     <Container fluid className="py-4" style={{ background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)', minHeight: '100vh' }}>
-      <Row className="mb-4">
+      <Row className="mb-4 align-items-center">
         <Col>
           <h1 className="display-5 fw-bold">Finance Manager Dashboard</h1>
           <p className="text-muted">Welcome back, {user?.username}! Pay salaries to employees.</p>
+        </Col>
+        <Col xs="auto">
+          <Button variant="outline-primary" onClick={fetchData} disabled={loading}>
+            <FaSync className={loading ? 'spin' : ''} /> Refresh
+          </Button>
         </Col>
       </Row>
 
@@ -158,6 +173,7 @@ const FinanceManagerDashboard = () => {
               <thead>
                 <tr>
                   <th>Employee</th>
+                  <th>Month</th>
                   <th>Amount</th>
                   <th>Status</th>
                   <th>Date</th>
@@ -167,6 +183,7 @@ const FinanceManagerDashboard = () => {
                 {salaryPayments.slice(0, 5).map(pay => (
                   <tr key={pay.id}>
                     <td>{pay.employee?.firstName} {pay.employee?.lastName}</td>
+                    <td>{pay.paymentMonth}</td>
                     <td>${pay.amount}</td>
                     <td>
                       <Badge bg={pay.status === 'APPROVED' ? 'success' : 'warning'}>
@@ -200,6 +217,15 @@ const FinanceManagerDashboard = () => {
                 type="text"
                 readOnly
                 value={selectedEmployee ? `${selectedEmployee.firstName} ${selectedEmployee.lastName}` : ''}
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Salary Month</Form.Label>
+              <Form.Control
+                type="month"
+                value={paymentMonth}
+                onChange={(e) => setPaymentMonth(e.target.value)}
+                required
               />
             </Form.Group>
             <Form.Group className="mb-3">
