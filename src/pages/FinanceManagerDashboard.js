@@ -2,10 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Table, Badge, Spinner, Modal, Form, Alert } from 'react-bootstrap';
 import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
+import api from '../services/api'; // ✅ Use interceptor
 import { FaUsers, FaMoneyBillWave, FaCheckCircle, FaClock, FaTimesCircle, FaSync } from 'react-icons/fa';
-
-const API_URL = 'http://127.0.0.1:5062/api';
 
 const FinanceManagerDashboard = () => {
   const { user } = useAuth();
@@ -13,6 +11,7 @@ const FinanceManagerDashboard = () => {
   const [salaryPayments, setSalaryPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [salaryError, setSalaryError] = useState(null);
 
   // Pay Salary modal
   const [showModal, setShowModal] = useState(false);
@@ -30,16 +29,28 @@ const FinanceManagerDashboard = () => {
   const fetchData = async () => {
     setLoading(true);
     setError(null);
+    setSalaryError(null);
+
     try {
-      const [empRes, payRes] = await Promise.all([
-        axios.get(`${API_URL}/users/employees`),
-        axios.get(`${API_URL}/salary/all`)
-      ]);
+      // ✅ Employees endpoint (public or uses token)
+      const empRes = await api.get('/users/employees');
       setEmployees(empRes.data.data || []);
+    } catch (err) {
+      console.error('Error fetching employees:', err);
+      setError('Failed to load employees. Please refresh.');
+    }
+
+    // ✅ Salary endpoint (protected)
+    try {
+      const payRes = await api.get('/salary/all');
       setSalaryPayments(payRes.data.data || []);
     } catch (err) {
-      console.error(err);
-      setError('Failed to load data');
+      console.error('Error fetching salary payments:', err);
+      if (err.response?.status === 401) {
+        setSalaryError('Authentication required. Please log in again.');
+      } else {
+        setSalaryError('Could not load salary history. Please refresh.');
+      }
     } finally {
       setLoading(false);
     }
@@ -76,7 +87,7 @@ const FinanceManagerDashboard = () => {
     setPaying(true);
     setPayResult(null);
     try {
-      const response = await axios.post(`${API_URL}/salary/pay`, {
+      const response = await api.post('/salary/pay', {
         employeeId: selectedEmployee.id,
         amount: parseFloat(amount),
         paymentMonth: paymentMonth,
@@ -93,13 +104,14 @@ const FinanceManagerDashboard = () => {
         setPayResult({ success: false, message: response.data.message || 'Payment failed' });
       }
     } catch (err) {
+      console.error('Pay salary error:', err);
       setPayResult({ success: false, message: err.response?.data?.message || err.message });
     } finally {
       setPaying(false);
     }
   };
 
-  if (loading) {
+  if (loading && employees.length === 0) {
     return (
       <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '80vh' }}>
         <Spinner animation="border" variant="primary" />
@@ -120,6 +132,9 @@ const FinanceManagerDashboard = () => {
           </Button>
         </Col>
       </Row>
+
+      {error && <Alert variant="danger">{error}</Alert>}
+      {salaryError && <Alert variant="warning">{salaryError}</Alert>}
 
       {/* Employees Table */}
       <Card className="shadow-sm border-0">
@@ -161,14 +176,12 @@ const FinanceManagerDashboard = () => {
       </Card>
 
       {/* Recent Salary Payments */}
-      <Card className="shadow-sm border-0 mt-4">
-        <Card.Header className="bg-white fw-bold">
-          <FaClock className="me-2" /> Recent Salary Payments
-        </Card.Header>
-        <Card.Body>
-          {salaryPayments.length === 0 ? (
-            <p className="text-muted">No salary payments yet.</p>
-          ) : (
+      {!salaryError && salaryPayments.length > 0 && (
+        <Card className="shadow-sm border-0 mt-4">
+          <Card.Header className="bg-white fw-bold">
+            <FaClock className="me-2" /> Recent Salary Payments
+          </Card.Header>
+          <Card.Body>
             <Table responsive hover size="sm">
               <thead>
                 <tr>
@@ -195,9 +208,9 @@ const FinanceManagerDashboard = () => {
                 ))}
               </tbody>
             </Table>
-          )}
-        </Card.Body>
-      </Card>
+          </Card.Body>
+        </Card>
+      )}
 
       {/* Pay Salary Modal */}
       <Modal show={showModal} onHide={() => setShowModal(false)} centered>

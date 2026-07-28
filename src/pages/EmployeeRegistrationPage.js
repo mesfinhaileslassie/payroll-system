@@ -243,8 +243,15 @@ const EmployeeRegistrationPage = () => {
   const [checkingDevice, setCheckingDevice] = useState(false);
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    if (e.target.name === 'deviceCode') {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    
+    // If position changes to "Normal Employee", clear device fields
+    if (name === 'position' && value === 'Normal Employee') {
+      setFormData(prev => ({ ...prev, deviceCode: '', deviceName: '' }));
+      setDeviceValid(null);
+    }
+    if (name === 'deviceCode') {
       setDeviceValid(null);
     }
   };
@@ -285,7 +292,8 @@ const EmployeeRegistrationPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (formData.deviceCode) {
+    // Only validate device if position is not Normal Employee
+    if (formData.position !== 'Normal Employee' && formData.deviceCode) {
       const installationId = extractInstallationId(formData.deviceCode);
       if (installationId) {
         try {
@@ -328,6 +336,9 @@ const EmployeeRegistrationPage = () => {
       setLoading(false);
     }
   };
+
+  // Determine if device section should be shown
+  const showDeviceSection = formData.position !== 'Normal Employee' && formData.position !== '';
 
   return (
     <Layout>
@@ -441,47 +452,53 @@ const EmployeeRegistrationPage = () => {
                 </Row>
               </div>
 
-              <hr className="erp-divider" />
-
-              <div className="erp-section">
-                <div className="erp-section-title">
-                  <span className="erp-badge">4</span> Device Registration
-                </div>
-                <div className="erp-device-box">
-                  <Row>
-                    <Col md={8}>
-                      <Form.Group className="mb-3">
-                        <Form.Label className="erp-form-label">Device Code (from employee's Soft Token app)</Form.Label>
-                        <Form.Control as="textarea" rows={3} name="deviceCode" value={formData.deviceCode} onChange={handleChange} />
-                      </Form.Group>
-                    </Col>
-                    <Col md={4}>
-                      <Form.Group className="mb-3">
-                        <Form.Label className="erp-form-label">Device Name</Form.Label>
-                        <Form.Control name="deviceName" value={formData.deviceName} onChange={handleChange} placeholder="Optional" />
-                      </Form.Group>
-                      <Button
-                        variant="outline-secondary"
-                        size="sm"
-                        onClick={checkDevice}
-                        disabled={!formData.deviceCode || checkingDevice}
-                        className="mt-2 erp-check-btn"
-                      >
-                        {checkingDevice ? <Spinner as="span" animation="border" size="sm" /> : 'Check Device'}
-                      </Button>
-                      {deviceValid === true && <span className="text-success erp-device-status">✅ Available</span>}
-                      {deviceValid === false && <span className="text-danger erp-device-status">❌ Already Registered</span>}
-                    </Col>
-                  </Row>
-                </div>
-              </div>
+              {showDeviceSection && (
+                <>
+                  <hr className="erp-divider" />
+                  <div className="erp-section">
+                    <div className="erp-section-title">
+                      <span className="erp-badge">4</span> Device Registration
+                    </div>
+                    <div className="erp-device-box">
+                      <Row>
+                        <Col md={8}>
+                          <Form.Group className="mb-3">
+                            <Form.Label className="erp-form-label">Device Code (from employee's Soft Token app)</Form.Label>
+                            <Form.Control as="textarea" rows={3} name="deviceCode" value={formData.deviceCode} onChange={handleChange} />
+                          </Form.Group>
+                        </Col>
+                        <Col md={4}>
+                          <Form.Group className="mb-3">
+                            <Form.Label className="erp-form-label">Device Name</Form.Label>
+                            <Form.Control name="deviceName" value={formData.deviceName} onChange={handleChange} placeholder="Optional" />
+                          </Form.Group>
+                          <Button
+                            variant="outline-secondary"
+                            size="sm"
+                            onClick={checkDevice}
+                            disabled={!formData.deviceCode || checkingDevice}
+                            className="mt-2 erp-check-btn"
+                          >
+                            {checkingDevice ? <Spinner as="span" animation="border" size="sm" /> : 'Check Device'}
+                          </Button>
+                          {deviceValid === true && <span className="text-success erp-device-status">✅ Available</span>}
+                          {deviceValid === false && <span className="text-danger erp-device-status">❌ Already Registered</span>}
+                        </Col>
+                      </Row>
+                    </div>
+                  </div>
+                </>
+              )}
 
               <div className="erp-footer-actions">
                 <Button
                   type="submit"
                   variant="primary"
                   className="erp-submit-btn"
-                  disabled={loading || (formData.deviceCode && deviceValid === false)}
+                  disabled={
+                    loading || 
+                    (formData.position !== 'Normal Employee' && formData.deviceCode && deviceValid === false)
+                  }
                 >
                   {loading ? 'Registering...' : 'Register Employee'}
                 </Button>
