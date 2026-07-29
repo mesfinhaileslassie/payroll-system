@@ -1,7 +1,7 @@
 // src/pages/LoginPage.js
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Container, Form, Button, Alert, Card } from 'react-bootstrap';
+import { Form, Button, Alert, Card } from 'react-bootstrap';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import { FaUser, FaLock, FaSignInAlt } from 'react-icons/fa';
@@ -24,11 +24,9 @@ const LoginPage = () => {
       const response = await axios.post(`${API_URL}/auth/login`, { username, password });
       if (response.data.success) {
         const { userId, username, role, token } = response.data;
-        // ✅ Store token for API interceptor
         localStorage.setItem('authToken', token);
         login({ userId, username, role, token });
         
-        // Role-based redirection
         if (role === 'Admin') {
           navigate('/admin/dashboard');
         } else if (role === 'PayrollOfficer') {
@@ -53,7 +51,7 @@ const LoginPage = () => {
       <style>{`
         .login-page {
           min-height: 100vh;
-          background: linear-gradient(135deg, #0b2b4a 0%, #1a4a7a 100%);
+          background: #ffffff; /* ✅ White background */
           display: flex;
           align-items: center;
           justify-content: center;
@@ -61,57 +59,58 @@ const LoginPage = () => {
         }
         .login-card {
           width: 100%;
-          max-width: 440px;
-          border: none;
+          max-width: 380px;
+          border: 1px solid #e9edf4; /* subtle border */
           border-radius: 20px;
-          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+          box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
           background: #ffffff;
           overflow: hidden;
         }
         .login-card .card-body {
-          padding: 2.5rem 2rem;
+          padding: 2rem 1.5rem;
         }
         .login-header {
           text-align: center;
-          margin-bottom: 2rem;
+          margin-bottom: 1.5rem;
         }
         .login-header .brand-icon {
-          width: 64px;
-          height: 64px;
-          background: linear-gradient(135deg, #0b2b4a 0%, #1a4a7a 100%);
+          width: 56px;
+          height: 56px;
+          background: #0b2b4a;
           border-radius: 16px;
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          margin-bottom: 1rem;
+          margin-bottom: 0.75rem;
           color: white;
-          font-size: 32px;
+          font-size: 28px;
         }
         .login-header h3 {
           font-weight: 700;
           color: #0b2b4a;
           margin-bottom: 0.25rem;
+          font-size: 1.5rem;
         }
         .login-header p {
           color: #6c757d;
-          font-size: 0.9rem;
+          font-size: 0.85rem;
           margin: 0;
         }
         .form-group-custom {
           position: relative;
-          margin-bottom: 1.25rem;
+          margin-bottom: 1rem;
         }
         .form-group-custom .form-control {
           padding-left: 2.75rem;
-          height: 48px;
+          height: 44px;
           border-radius: 10px;
           border: 1.5px solid #e2e8f0;
           transition: all 0.2s;
-          font-size: 0.95rem;
+          font-size: 0.9rem;
         }
         .form-group-custom .form-control:focus {
-          border-color: #1a4a7a;
-          box-shadow: 0 0 0 3px rgba(26, 74, 122, 0.1);
+          border-color: #0b2b4a;
+          box-shadow: 0 0 0 3px rgba(11, 43, 74, 0.1);
         }
         .form-group-custom .form-icon {
           position: absolute;
@@ -122,17 +121,17 @@ const LoginPage = () => {
           font-size: 16px;
         }
         .login-btn {
-          height: 50px;
+          height: 46px;
           border-radius: 10px;
           font-weight: 600;
-          font-size: 1rem;
-          background: linear-gradient(135deg, #0b2b4a 0%, #1a4a7a 100%);
+          font-size: 0.95rem;
+          background: #0b2b4a;
           border: none;
           transition: all 0.2s;
         }
         .login-btn:hover {
           transform: translateY(-2px);
-          box-shadow: 0 8px 20px rgba(26, 74, 122, 0.3);
+          box-shadow: 0 8px 20px rgba(11, 43, 74, 0.3);
         }
         .login-btn:disabled {
           opacity: 0.7;
@@ -140,12 +139,12 @@ const LoginPage = () => {
         }
         .login-footer {
           text-align: center;
-          margin-top: 1.5rem;
-          font-size: 0.85rem;
+          margin-top: 1.25rem;
+          font-size: 0.8rem;
           color: #94a3b8;
         }
         .login-footer a {
-          color: #1a4a7a;
+          color: #0b2b4a;
           font-weight: 600;
           text-decoration: none;
         }
@@ -157,8 +156,8 @@ const LoginPage = () => {
           border: none;
           background: #fee2e2;
           color: #b91c1c;
-          font-size: 0.9rem;
-          padding: 0.75rem 1rem;
+          font-size: 0.85rem;
+          padding: 0.6rem 0.8rem;
         }
       `}</style>
 
@@ -169,7 +168,7 @@ const LoginPage = () => {
               <FaSignInAlt />
             </div>
             <h3>Welcome Back</h3>
-            <p>Sign in to your account to continue</p>
+            <p>Sign in to your account</p>
           </div>
 
           {error && <Alert variant="danger" className="error-alert">{error}</Alert>}
@@ -199,9 +198,6 @@ const LoginPage = () => {
 
             <Form.Group className="mb-3 d-flex justify-content-between align-items-center">
               <Form.Check type="checkbox" label="Remember me" />
-              <a href="#" className="text-decoration-none" style={{ fontSize: '0.85rem', color: '#1a4a7a' }}>
-                Forgot password?
-              </a>
             </Form.Group>
 
             <Button

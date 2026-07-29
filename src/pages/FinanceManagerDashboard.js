@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Table, Badge, Spinner, Modal, Form, Alert } from 'react-bootstrap';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import { useNavigate } from 'react-router-dom';
 import {
   FaUsers,
   FaMoneyBillWave,
@@ -12,11 +13,13 @@ import {
   FaSync,
   FaUserPlus,
   FaWallet,
-  FaChartLine
+  FaChartLine,
+  FaSignOutAlt
 } from 'react-icons/fa';
 
 const FinanceManagerDashboard = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [employees, setEmployees] = useState([]);
   const [salaryPayments, setSalaryPayments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -63,7 +66,6 @@ const FinanceManagerDashboard = () => {
       const payRes = await api.get('/salary/all');
       const payments = payRes.data.data || [];
       setSalaryPayments(payments);
-      // Calculate stats
       const totalPaid = payments.reduce((sum, p) => sum + (p.status === 'APPROVED' ? p.amount : 0), 0);
       const pendingPayments = payments.filter(p => p.status === 'PENDING').length;
       setStats(prev => ({
@@ -82,6 +84,11 @@ const FinanceManagerDashboard = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
   };
 
   const getCurrentMonth = () => {
@@ -150,7 +157,7 @@ const FinanceManagerDashboard = () => {
   return (
     <div style={{ background: '#f0f4f8', minHeight: '100vh', padding: '2rem 1.5rem' }}>
       <Container fluid>
-        {/* Header */}
+        {/* Header with Logout */}
         <Row className="mb-4 align-items-center">
           <Col>
             <h1 className="display-5 fw-bold" style={{ color: '#0b2b4a' }}>
@@ -158,7 +165,7 @@ const FinanceManagerDashboard = () => {
             </h1>
             <p className="text-muted">Welcome back, <strong>{user?.username}</strong>! Manage employee salaries.</p>
           </Col>
-          <Col xs="auto">
+          <Col xs="auto" className="d-flex gap-2">
             <Button
               variant="outline-primary"
               onClick={fetchData}
@@ -166,6 +173,13 @@ const FinanceManagerDashboard = () => {
               className="rounded-pill px-4"
             >
               <FaSync className={loading ? 'spin' : ''} /> Refresh
+            </Button>
+            <Button
+              variant="outline-danger"
+              onClick={handleLogout}
+              className="rounded-pill px-4"
+            >
+              <FaSignOutAlt className="me-1" /> Logout
             </Button>
           </Col>
         </Row>
