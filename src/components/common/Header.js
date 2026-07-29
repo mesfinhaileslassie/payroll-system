@@ -29,6 +29,7 @@ const Header = () => {
                 <Nav.Link as={Link} to="/admin/dashboard">Dashboard</Nav.Link>
                 <Nav.Link as={Link} to="/admin/device-registration">Register Device</Nav.Link>
                 <Nav.Link as={Link} to="/admin/device-management">Device Management</Nav.Link>
+                <Nav.Link as={Link} to="/admin/employee-management">Employee Management</Nav.Link> {/* NEW */}
                 <Nav.Link as={Link} to="/admin/budget-approval">Budget Approval</Nav.Link>
                 <Nav.Link as={Link} to="/admin/employee-registration">Register Employee</Nav.Link>
               </>
@@ -46,9 +47,7 @@ const Header = () => {
               </>
             )}
             {user?.role === 'Employee' && (
-              <>
-                <Nav.Link as={Link} to="/employee/dashboard">Dashboard</Nav.Link>
-              </>
+              <Nav.Link as={Link} to="/employee/dashboard">Dashboard</Nav.Link>
             )}
             {!user && (
               <Nav.Link as={Link} to="/login">Login</Nav.Link>

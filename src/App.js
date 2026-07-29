@@ -4,12 +4,13 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
-import HomePage from './pages/HomePage'; // Admin Dashboard
+import HomePage from './pages/HomePage';
 import EmployeeDashboard from './pages/EmployeeDashboard';
 import PayrollOfficerDashboard from './pages/PayrollOfficerDashboard';
 import FinanceManagerDashboard from './pages/FinanceManagerDashboard';
 import DeviceRegistrationPage from './pages/DeviceRegistrationPage';
 import DeviceManagementPage from './pages/DeviceManagementPage';
+import EmployeeManagementPage from './pages/EmployeeManagementPage'; // NEW
 import BudgetApprovalPage from './pages/BudgetApprovalPage';
 import EmployeeRegistrationPage from './pages/EmployeeRegistrationPage';
 import UnauthorizedPage from './pages/UnauthorizedPage';
@@ -36,6 +37,11 @@ function App() {
           <Route path="/admin/device-management" element={
             <ProtectedRoute allowedRoles={['Admin']}>
               <DeviceManagementPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/employee-management" element={
+            <ProtectedRoute allowedRoles={['Admin']}>
+              <EmployeeManagementPage />
             </ProtectedRoute>
           } />
           <Route path="/admin/budget-approval" element={
@@ -70,7 +76,6 @@ function App() {
             </ProtectedRoute>
           } />
 
-          {/* Default redirect */}
           <Route path="/" element={<Navigate to="/login" replace />} />
         </Routes>
       </BrowserRouter>
