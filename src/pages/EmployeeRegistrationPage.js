@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Container, Card, Form, Button, Alert, Row, Col, Spinner } from 'react-bootstrap';
 import Layout from '../components/common/Layout';
-import axios from 'axios';
+import api from '../services/api';
 
 const API_URL = 'http://127.0.0.1:5062/api';
 
@@ -64,6 +64,7 @@ const erpStyles = `
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .erp-activation-code {
@@ -239,14 +240,14 @@ const EmployeeRegistrationPage = () => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [activationCode, setActivationCode] = useState('');
+  const [deviceId, setDeviceId] = useState(null);
   const [deviceValid, setDeviceValid] = useState(null);
   const [checkingDevice, setCheckingDevice] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
-    
-    // If position changes to "Normal Employee", clear device fields
     if (name === 'position' && value === 'Normal Employee') {
       setFormData(prev => ({ ...prev, deviceCode: '', deviceName: '' }));
       setDeviceValid(null);
@@ -274,7 +275,7 @@ const EmployeeRegistrationPage = () => {
     setCheckingDevice(true);
     setResult(null);
     try {
-      const response = await axios.get(`${API_URL}/device/check-registration?installationId=${installationId}`);
+      const response = await api.get(`/device/check-registration?installationId=${installationId}`);
       if (response.data.registered) {
         setDeviceValid(false);
         setResult({ success: false, message: 'This device is already registered. Please use a different device.' });
@@ -292,12 +293,11 @@ const EmployeeRegistrationPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Only validate device if position is not Normal Employee
     if (formData.position !== 'Normal Employee' && formData.deviceCode) {
       const installationId = extractInstallationId(formData.deviceCode);
       if (installationId) {
         try {
-          const checkRes = await axios.get(`${API_URL}/device/check-registration?installationId=${installationId}`);
+          const checkRes = await api.get(`/device/check-registration?installationId=${installationId}`);
           if (checkRes.data.registered) {
             setResult({ success: false, message: 'This device is already registered. Please use a different device.' });
             return;
@@ -314,12 +314,15 @@ const EmployeeRegistrationPage = () => {
 
     setLoading(true);
     setResult(null);
+    setActivationCode('');
+    setDeviceId(null);
     try {
-      const response = await axios.post(`${API_URL}/auth/register-employee`, formData);
+      const response = await api.post('/auth/register-employee', formData);
       if (response.data.success) {
         setResult({ success: true, message: response.data.message });
         if (response.data.activationCode) {
           setActivationCode(response.data.activationCode);
+          setDeviceId(response.data.deviceId);
         }
         setFormData({
           username: '', email: '', password: '', firstName: '', lastName: '',
@@ -337,7 +340,29 @@ const EmployeeRegistrationPage = () => {
     }
   };
 
-  // Determine if device section should be shown
+  const handleRegenerateCode = async () => {
+    if (!deviceId) {
+      setResult({ success: false, message: 'No device ID found to regenerate activation code.' });
+      return;
+    }
+    setRegenerating(true);
+    setResult(null);
+    try {
+      const response = await api.post(`/device/${deviceId}/regenerate-activation`);
+      if (response.data.success) {
+        setActivationCode(response.data.activationCode);
+        setResult({ success: true, message: 'Activation code regenerated successfully!' });
+      } else {
+        setResult({ success: false, message: response.data.message || 'Failed to regenerate activation code.' });
+      }
+    } catch (err) {
+      console.error('Regenerate error:', err);
+      setResult({ success: false, message: err.response?.data?.message || 'Error regenerating activation code.' });
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
   const showDeviceSection = formData.position !== 'Normal Employee' && formData.position !== '';
 
   return (
@@ -364,6 +389,15 @@ const EmployeeRegistrationPage = () => {
             <span>
               <strong>Activation Code:</strong> <span className="erp-activation-code">{activationCode}</span> – Give this code to the employee to activate their device.
             </span>
+            <Button
+              variant="outline-primary"
+              size="sm"
+              className="ms-3"
+              onClick={handleRegenerateCode}
+              disabled={regenerating}
+            >
+              {regenerating ? 'Regenerating...' : 'Regenerate Code'}
+            </Button>
           </Alert>
         )}
 
@@ -496,7 +530,7 @@ const EmployeeRegistrationPage = () => {
                   variant="primary"
                   className="erp-submit-btn"
                   disabled={
-                    loading || 
+                    loading ||
                     (formData.position !== 'Normal Employee' && formData.deviceCode && deviceValid === false)
                   }
                 >
