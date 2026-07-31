@@ -1,4 +1,5 @@
 // src/App.js
+
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
@@ -6,12 +7,10 @@ import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import HomePage from './pages/HomePage';
 import EmployeeDashboard from './pages/EmployeeDashboard';
-import PayrollOfficerDashboard from './pages/PayrollOfficerDashboard';
 import FinanceManagerDashboard from './pages/FinanceManagerDashboard';
 import DeviceRegistrationPage from './pages/DeviceRegistrationPage';
 import DeviceManagementPage from './pages/DeviceManagementPage';
-import EmployeeManagementPage from './pages/EmployeeManagementPage'; // NEW
-import BudgetApprovalPage from './pages/BudgetApprovalPage';
+import EmployeeManagementPage from './pages/EmployeeManagementPage';
 import EmployeeRegistrationPage from './pages/EmployeeRegistrationPage';
 import UnauthorizedPage from './pages/UnauthorizedPage';
 
@@ -44,21 +43,9 @@ function App() {
               <EmployeeManagementPage />
             </ProtectedRoute>
           } />
-          <Route path="/admin/budget-approval" element={
-            <ProtectedRoute allowedRoles={['Admin', 'PayrollOfficer', 'FinanceManager']}>
-              <BudgetApprovalPage />
-            </ProtectedRoute>
-          } />
           <Route path="/admin/employee-registration" element={
             <ProtectedRoute allowedRoles={['Admin']}>
               <EmployeeRegistrationPage />
-            </ProtectedRoute>
-          } />
-
-          {/* Payroll Officer Dashboard */}
-          <Route path="/payroll-officer/dashboard" element={
-            <ProtectedRoute allowedRoles={['PayrollOfficer']}>
-              <PayrollOfficerDashboard />
             </ProtectedRoute>
           } />
 

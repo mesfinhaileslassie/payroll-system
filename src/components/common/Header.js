@@ -1,4 +1,5 @@
 // src/components/common/Header.js
+
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Navbar, Nav, Container, Button } from 'react-bootstrap';
@@ -27,23 +28,14 @@ const Header = () => {
             {user?.role === 'Admin' && (
               <>
                 <Nav.Link as={Link} to="/admin/dashboard">Dashboard</Nav.Link>
-                <Nav.Link as={Link} to="/admin/device-registration">Register Device</Nav.Link>
                 <Nav.Link as={Link} to="/admin/device-management">Device Management</Nav.Link>
-                <Nav.Link as={Link} to="/admin/employee-management">Employee Management</Nav.Link> {/* NEW */}
-                <Nav.Link as={Link} to="/admin/budget-approval">Budget Approval</Nav.Link>
+                <Nav.Link as={Link} to="/admin/employee-management">Employee Management</Nav.Link>
                 <Nav.Link as={Link} to="/admin/employee-registration">Register Employee</Nav.Link>
-              </>
-            )}
-            {user?.role === 'PayrollOfficer' && (
-              <>
-                <Nav.Link as={Link} to="/payroll-officer/dashboard">Dashboard</Nav.Link>
-                <Nav.Link as={Link} to="/admin/budget-approval">Submit Budget</Nav.Link>
               </>
             )}
             {user?.role === 'FinanceManager' && (
               <>
                 <Nav.Link as={Link} to="/finance-manager/dashboard">Dashboard</Nav.Link>
-                <Nav.Link as={Link} to="/admin/budget-approval">Review Budgets</Nav.Link>
               </>
             )}
             {user?.role === 'Employee' && (

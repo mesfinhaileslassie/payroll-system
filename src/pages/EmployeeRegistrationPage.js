@@ -1,4 +1,5 @@
 // src/pages/EmployeeRegistrationPage.js
+
 import React, { useState } from 'react';
 import { Container, Card, Form, Button, Alert, Row, Col, Spinner } from 'react-bootstrap';
 import Layout from '../components/common/Layout';
@@ -11,14 +12,12 @@ const erpStyles = `
   padding-top: 2rem;
   padding-bottom: 3rem;
 }
-
 .erp-header {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   margin-bottom: 1.5rem;
 }
-
 .erp-header-icon {
   display: inline-flex;
   align-items: center;
@@ -31,42 +30,35 @@ const erpStyles = `
   font-size: 1.25rem;
   flex-shrink: 0;
 }
-
 .erp-header h2 {
   margin: 0;
   font-weight: 700;
   letter-spacing: -0.01em;
   color: #212529;
 }
-
 .erp-header p {
   margin: 0;
   color: #6c757d;
   font-size: 0.925rem;
 }
-
 .erp-alert {
   border: none;
   border-left: 4px solid transparent;
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
-
 .erp-alert.alert-success {
   border-left-color: #198754;
 }
-
 .erp-alert.alert-danger {
   border-left-color: #dc3545;
 }
-
 .erp-activation-alert {
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
   flex-wrap: wrap;
 }
-
 .erp-activation-code {
   display: inline-block;
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
@@ -77,26 +69,21 @@ const erpStyles = `
   padding: 0.15rem 0.5rem;
   border-radius: 6px;
 }
-
 .erp-card {
   border: 1px solid rgba(0, 0, 0, 0.06);
   border-radius: 16px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   overflow: hidden;
 }
-
 .erp-card .card-body {
   padding: 2rem;
 }
-
 .erp-section {
   margin-bottom: 1.75rem;
 }
-
 .erp-section:last-of-type {
   margin-bottom: 0.5rem;
 }
-
 .erp-section-title {
   display: flex;
   align-items: center;
@@ -108,7 +95,6 @@ const erpStyles = `
   color: #6c757d;
   margin-bottom: 1rem;
 }
-
 .erp-section-title .erp-badge {
   display: inline-flex;
   align-items: center;
@@ -123,20 +109,17 @@ const erpStyles = `
   letter-spacing: 0;
   text-transform: none;
 }
-
 .erp-divider {
   border: none;
   border-top: 1px dashed rgba(0, 0, 0, 0.12);
   margin: 1.75rem 0;
 }
-
 .erp-form-label {
   font-size: 0.85rem;
   font-weight: 600;
   color: #343a40;
   margin-bottom: 0.35rem;
 }
-
 .erp-form-control,
 .erp-card .form-control,
 .erp-card .form-select {
@@ -146,20 +129,17 @@ const erpStyles = `
   font-size: 0.925rem;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
-
 .erp-card .form-control:focus,
 .erp-card .form-select:focus {
   border-color: #86b7fe;
   box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
 }
-
 .erp-device-box {
   background: #f8f9fa;
   border: 1px solid rgba(0, 0, 0, 0.06);
   border-radius: 12px;
   padding: 1.25rem 1.25rem 0.5rem;
 }
-
 .erp-device-status {
   display: inline-flex;
   align-items: center;
@@ -171,23 +151,19 @@ const erpStyles = `
   margin-left: 0.5rem;
   vertical-align: middle;
 }
-
 .erp-device-status.text-success {
   background: rgba(25, 135, 84, 0.12);
   color: #146c43 !important;
 }
-
 .erp-device-status.text-danger {
   background: rgba(220, 53, 69, 0.12);
   color: #b02a37 !important;
 }
-
 .erp-check-btn {
   border-radius: 8px;
   font-weight: 600;
   font-size: 0.825rem;
 }
-
 .erp-footer-actions {
   display: flex;
   align-items: center;
@@ -197,27 +173,22 @@ const erpStyles = `
   padding-top: 1.5rem;
   border-top: 1px solid rgba(0, 0, 0, 0.06);
 }
-
 .erp-submit-btn {
   border-radius: 8px;
   font-weight: 600;
   padding: 0.55rem 1.75rem;
   box-shadow: 0 2px 8px rgba(13, 110, 253, 0.25);
 }
-
 .erp-submit-btn:disabled {
   box-shadow: none;
 }
-
 @media (max-width: 767.98px) {
   .erp-card .card-body {
     padding: 1.25rem;
   }
-
   .erp-footer-actions {
     justify-content: stretch;
   }
-
   .erp-submit-btn {
     width: 100%;
   }
@@ -237,6 +208,7 @@ const EmployeeRegistrationPage = () => {
     deviceCode: '',
     deviceName: ''
   });
+
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [activationCode, setActivationCode] = useState('');
@@ -248,6 +220,7 @@ const EmployeeRegistrationPage = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+
     if (name === 'position' && value === 'Normal Employee') {
       setFormData(prev => ({ ...prev, deviceCode: '', deviceName: '' }));
       setDeviceValid(null);
@@ -272,6 +245,7 @@ const EmployeeRegistrationPage = () => {
       setResult({ success: false, message: 'Invalid device code. Please paste a valid device code.' });
       return;
     }
+
     setCheckingDevice(true);
     setResult(null);
     try {
@@ -316,14 +290,18 @@ const EmployeeRegistrationPage = () => {
     setResult(null);
     setActivationCode('');
     setDeviceId(null);
+
     try {
       const response = await api.post('/auth/register-employee', formData);
+
       if (response.data.success) {
         setResult({ success: true, message: response.data.message });
+
         if (response.data.activationCode) {
           setActivationCode(response.data.activationCode);
           setDeviceId(response.data.deviceId);
         }
+
         setFormData({
           username: '', email: '', password: '', firstName: '', lastName: '',
           phone: '', gender: '', position: '', deviceCode: '', deviceName: ''
@@ -345,6 +323,7 @@ const EmployeeRegistrationPage = () => {
       setResult({ success: false, message: 'No device ID found to regenerate activation code.' });
       return;
     }
+
     setRegenerating(true);
     setResult(null);
     try {
@@ -387,7 +366,7 @@ const EmployeeRegistrationPage = () => {
           <Alert className="erp-alert erp-activation-alert" variant="success">
             <span aria-hidden="true">🔑</span>
             <span>
-              <strong>Activation Code:</strong> <span className="erp-activation-code">{activationCode}</span> – Give this code to the employee to activate their device.
+              <strong>Activation Code:</strong> <span className="erp-activation-code">{activationCode}</span> -- Give this code to the employee to activate their device.
             </span>
             <Button
               variant="outline-primary"
@@ -404,7 +383,6 @@ const EmployeeRegistrationPage = () => {
         <Card className="erp-card">
           <Card.Body>
             <Form onSubmit={handleSubmit}>
-
               <div className="erp-section">
                 <div className="erp-section-title">
                   <span className="erp-badge">1</span> Account Credentials
@@ -478,7 +456,7 @@ const EmployeeRegistrationPage = () => {
                       <Form.Select name="position" value={formData.position} onChange={handleChange} required>
                         <option value="">Select position</option>
                         <option value="Normal Employee">Normal Employee</option>
-                        <option value="Payroll Officer">Payroll Officer</option>
+                        {/* Payroll Officer option removed */}
                         <option value="Finance Manager">Finance Manager</option>
                       </Form.Select>
                     </Form.Group>
