@@ -1,4 +1,5 @@
 // src/pages/FinanceManagerDashboard.js
+
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Table, Badge, Spinner, Modal, Form, Alert } from 'react-bootstrap';
 import { useAuth } from '../context/AuthContext';
@@ -9,9 +10,7 @@ import {
   FaMoneyBillWave,
   FaCheckCircle,
   FaClock,
-  FaTimesCircle,
   FaSync,
-  FaUserPlus,
   FaWallet,
   FaChartLine,
   FaSignOutAlt
@@ -20,6 +19,7 @@ import {
 const FinanceManagerDashboard = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+
   const [employees, setEmployees] = useState([]);
   const [salaryPayments, setSalaryPayments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -30,18 +30,40 @@ const FinanceManagerDashboard = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [amount, setAmount] = useState('');
-  const [paymentMonth, setPaymentMonth] = useState('');
+  const [selectedYear, setSelectedYear] = useState('');
+  const [selectedMonth, setSelectedMonth] = useState('');
   const [otp, setOtp] = useState('');
   const [paying, setPaying] = useState(false);
   const [payResult, setPayResult] = useState(null);
 
-  // Statistics
+  // Paid months for the selected employee
+  const [paidMonths, setPaidMonths] = useState([]);
+  const [loadingPaidMonths, setLoadingPaidMonths] = useState(false);
+
   const [stats, setStats] = useState({
     totalEmployees: 0,
     totalPaid: 0,
     pendingPayments: 0,
     recentPayments: 0
   });
+
+  // Year range: from 2020 to current year + 1
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 12 }, (_, i) => currentYear - 5 + i);
+  const months = [
+    { value: '01', label: 'January' },
+    { value: '02', label: 'February' },
+    { value: '03', label: 'March' },
+    { value: '04', label: 'April' },
+    { value: '05', label: 'May' },
+    { value: '06', label: 'June' },
+    { value: '07', label: 'July' },
+    { value: '08', label: 'August' },
+    { value: '09', label: 'September' },
+    { value: '10', label: 'October' },
+    { value: '11', label: 'November' },
+    { value: '12', label: 'December' }
+  ];
 
   useEffect(() => {
     fetchData();
@@ -91,18 +113,39 @@ const FinanceManagerDashboard = () => {
     navigate('/login');
   };
 
-  const getCurrentMonth = () => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  };
-
   const handlePayClick = (employee) => {
     setSelectedEmployee(employee);
     setAmount('');
-    setPaymentMonth(getCurrentMonth());
+    // Set default to current month and year
+    const now = new Date();
+    setSelectedYear(now.getFullYear().toString());
+    setSelectedMonth(String(now.getMonth() + 1).padStart(2, '0'));
     setOtp('');
     setPayResult(null);
+    setPaidMonths([]);
+    // Fetch paid months for this employee
+    fetchPaidMonths(employee.id);
     setShowModal(true);
+  };
+
+  const fetchPaidMonths = async (employeeId) => {
+    setLoadingPaidMonths(true);
+    try {
+      const response = await api.get(`/salary/paid-months/${employeeId}`);
+      if (response.data.success) {
+        setPaidMonths(response.data.data || []);
+      }
+    } catch (err) {
+      console.error('Error fetching paid months:', err);
+      setPaidMonths([]);
+    } finally {
+      setLoadingPaidMonths(false);
+    }
+  };
+
+  const isMonthPaid = (year, month) => {
+    const paymentMonth = `${year}-${month}`;
+    return paidMonths.includes(paymentMonth);
   };
 
   const handlePaySubmit = async () => {
@@ -110,10 +153,18 @@ const FinanceManagerDashboard = () => {
       setPayResult({ success: false, message: 'Please enter a valid amount' });
       return;
     }
-    if (!paymentMonth || !/^\d{4}-\d{2}$/.test(paymentMonth)) {
-      setPayResult({ success: false, message: 'Please select a valid month (YYYY-MM)' });
+
+    if (!selectedYear || !selectedMonth) {
+      setPayResult({ success: false, message: 'Please select a year and month' });
       return;
     }
+
+    const paymentMonth = `${selectedYear}-${selectedMonth}`;
+    if (isMonthPaid(selectedYear, selectedMonth)) {
+      setPayResult({ success: false, message: 'Salary for this month has already been paid.' });
+      return;
+    }
+
     if (!otp || otp.length !== 6 || !/^\d{6}$/.test(otp)) {
       setPayResult({ success: false, message: 'Please enter a valid 6-digit OTP' });
       return;
@@ -121,6 +172,7 @@ const FinanceManagerDashboard = () => {
 
     setPaying(true);
     setPayResult(null);
+
     try {
       const response = await api.post('/salary/pay', {
         employeeId: selectedEmployee.id,
@@ -129,6 +181,7 @@ const FinanceManagerDashboard = () => {
         username: user.username,
         otp: otp.trim()
       });
+
       if (response.data.success) {
         setPayResult({ success: true, message: `✅ Salary paid to ${selectedEmployee.firstName} ${selectedEmployee.lastName}!` });
         setTimeout(() => {
@@ -157,7 +210,6 @@ const FinanceManagerDashboard = () => {
   return (
     <div style={{ background: '#f0f4f8', minHeight: '100vh', padding: '2rem 1.5rem' }}>
       <Container fluid>
-        {/* Header with Logout */}
         <Row className="mb-4 align-items-center">
           <Col>
             <h1 className="display-5 fw-bold" style={{ color: '#0b2b4a' }}>
@@ -166,29 +218,18 @@ const FinanceManagerDashboard = () => {
             <p className="text-muted">Welcome back, <strong>{user?.username}</strong>! Manage employee salaries.</p>
           </Col>
           <Col xs="auto" className="d-flex gap-2">
-            <Button
-              variant="outline-primary"
-              onClick={fetchData}
-              disabled={loading}
-              className="rounded-pill px-4"
-            >
+            <Button variant="outline-primary" onClick={fetchData} disabled={loading} className="rounded-pill px-4">
               <FaSync className={loading ? 'spin' : ''} /> Refresh
             </Button>
-            <Button
-              variant="outline-danger"
-              onClick={handleLogout}
-              className="rounded-pill px-4"
-            >
+            <Button variant="outline-danger" onClick={handleLogout} className="rounded-pill px-4">
               <FaSignOutAlt className="me-1" /> Logout
             </Button>
           </Col>
         </Row>
 
-        {/* Error Alerts */}
         {error && <Alert variant="danger">{error}</Alert>}
         {salaryError && <Alert variant="warning">{salaryError}</Alert>}
 
-        {/* Statistics Cards */}
         <Row className="mb-4 g-3">
           <Col md={3} sm={6}>
             <Card className="border-0 shadow-sm h-100" style={{ borderRadius: '16px' }}>
@@ -267,9 +308,7 @@ const FinanceManagerDashboard = () => {
                 </thead>
                 <tbody>
                   {employees.length === 0 ? (
-                    <tr>
-                      <td colSpan="5" className="text-center text-muted py-4">No employees found.</td>
-                    </tr>
+                    <tr><td colSpan="5" className="text-center text-muted py-4">No employees found.</td></tr>
                   ) : (
                     employees.map(emp => (
                       <tr key={emp.id}>
@@ -278,12 +317,7 @@ const FinanceManagerDashboard = () => {
                         <td>{emp.username}</td>
                         <td>{emp.email}</td>
                         <td className="text-end">
-                          <Button
-                            variant="success"
-                            size="sm"
-                            onClick={() => handlePayClick(emp)}
-                            className="rounded-pill px-3"
-                          >
+                          <Button variant="success" size="sm" onClick={() => handlePayClick(emp)} className="rounded-pill px-3">
                             <FaMoneyBillWave className="me-1" /> Pay Salary
                           </Button>
                         </td>
@@ -340,7 +374,7 @@ const FinanceManagerDashboard = () => {
         )}
 
         {/* Pay Salary Modal */}
-        <Modal show={showModal} onHide={() => setShowModal(false)} centered>
+        <Modal show={showModal} onHide={() => setShowModal(false)} centered size="lg">
           <Modal.Header closeButton className="border-0">
             <Modal.Title>Pay Salary</Modal.Title>
           </Modal.Header>
@@ -360,15 +394,54 @@ const FinanceManagerDashboard = () => {
                   style={{ background: '#f8fafc' }}
                 />
               </Form.Group>
+
               <Form.Group className="mb-3">
-                <Form.Label>Salary Month</Form.Label>
-                <Form.Control
-                  type="month"
-                  value={paymentMonth}
-                  onChange={(e) => setPaymentMonth(e.target.value)}
-                  required
-                />
+                <Form.Label>Select Year and Month</Form.Label>
+                <Row>
+                  <Col md={6}>
+                    <Form.Select
+                      value={selectedYear}
+                      onChange={(e) => setSelectedYear(e.target.value)}
+                      required
+                    >
+                      <option value="">Year</option>
+                      {years.map(year => (
+                        <option key={year} value={year}>{year}</option>
+                      ))}
+                    </Form.Select>
+                  </Col>
+                  <Col md={6}>
+                    <Form.Select
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(e.target.value)}
+                      required
+                      disabled={!selectedYear || loadingPaidMonths}
+                    >
+                      <option value="">Month</option>
+                      {months.map(({ value, label }) => {
+                        const isPaid = selectedYear && isMonthPaid(selectedYear, value);
+                        return (
+                          <option
+                            key={value}
+                            value={value}
+                            disabled={isPaid}
+                            style={isPaid ? { backgroundColor: '#f8d7da', color: '#6c757d' } : {}}
+                          >
+                            {label} {isPaid ? '(Paid)' : ''}
+                          </option>
+                        );
+                      })}
+                    </Form.Select>
+                  </Col>
+                </Row>
+                {selectedYear && selectedMonth && isMonthPaid(selectedYear, selectedMonth) && (
+                  <Form.Text className="text-danger">
+                    ⚠️ Salary for this month has already been paid.
+                  </Form.Text>
+                )}
+                {loadingPaidMonths && <Form.Text className="text-muted">Loading paid months...</Form.Text>}
               </Form.Group>
+
               <Form.Group className="mb-3">
                 <Form.Label>Amount (birr)</Form.Label>
                 <Form.Control
@@ -379,6 +452,7 @@ const FinanceManagerDashboard = () => {
                   onChange={(e) => setAmount(e.target.value)}
                 />
               </Form.Group>
+
               <Form.Group className="mb-3">
                 <Form.Label>OTP (6 digits from your Soft Token app)</Form.Label>
                 <Form.Control
@@ -402,7 +476,11 @@ const FinanceManagerDashboard = () => {
             <Button variant="outline-secondary" onClick={() => setShowModal(false)}>
               Cancel
             </Button>
-            <Button variant="success" onClick={handlePaySubmit} disabled={paying}>
+            <Button
+              variant="success"
+              onClick={handlePaySubmit}
+              disabled={paying || !selectedYear || !selectedMonth || isMonthPaid(selectedYear, selectedMonth)}
+            >
               {paying ? <Spinner as="span" animation="border" size="sm" /> : 'Pay Salary'}
             </Button>
           </Modal.Footer>
