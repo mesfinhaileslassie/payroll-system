@@ -3,10 +3,11 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Form, Button, Alert, Card } from 'react-bootstrap';
 import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
+import api from '../services/api'; // ✅ Use the configured api instance
 import { FaUser, FaLock, FaSignInAlt } from 'react-icons/fa';
 
-const API_URL = 'http://127.0.0.1:5062/api';
+// Remove the hardcoded API_URL – it's now in api.js
+// const API_URL = 'http://127.0.0.1:5062/api';
 
 const LoginPage = () => {
   const [username, setUsername] = useState('');
@@ -21,7 +22,8 @@ const LoginPage = () => {
     setError('');
     setLoading(true);
     try {
-      const response = await axios.post(`${API_URL}/auth/login`, { username, password });
+      // ✅ Use api instance instead of axios directly
+      const response = await api.post('/auth/login', { username, password });
       if (response.data.success) {
         const { userId, username, role, token } = response.data;
         localStorage.setItem('authToken', token);
@@ -51,7 +53,7 @@ const LoginPage = () => {
       <style>{`
         .login-page {
           min-height: 100vh;
-          background: #ffffff; /* ✅ White background */
+          background: #ffffff;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -60,7 +62,7 @@ const LoginPage = () => {
         .login-card {
           width: 100%;
           max-width: 380px;
-          border: 1px solid #e9edf4; /* subtle border */
+          border: 1px solid #e9edf4;
           border-radius: 20px;
           box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
           background: #ffffff;

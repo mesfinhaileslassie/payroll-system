@@ -1,7 +1,8 @@
 // src/services/api.js
 import axios from 'axios';
 
-const API_BASE_URL ='http://127.0.0.1:5062/api';
+// ✅ Update the port to 5260
+const API_BASE_URL = 'http://127.0.0.1:5260/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -16,7 +17,7 @@ api.interceptors.request.use(
     const token = localStorage.getItem('authToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log('✅ Token attached:', token.substring(0, 20) + '...'); // Debug
+      console.log('✅ Token attached:', token.substring(0, 20) + '...');
     } else {
       console.warn('⚠️ No token found in localStorage');
     }
@@ -33,7 +34,6 @@ api.interceptors.response.use(
       console.warn('⚠️ 401 Unauthorized:', error.config.url);
       // Only redirect if not already on login page
       if (window.location.pathname !== '/login') {
-        // Clear token and redirect to login
         localStorage.removeItem('authToken');
         window.location.href = '/login';
       }
