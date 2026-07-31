@@ -1,11 +1,10 @@
 // src/pages/DeviceManagementPage.js
+
 import React, { useState, useEffect } from 'react';
 import { Container, Table, Button, Alert, Spinner, Card, Form, Modal, Badge } from 'react-bootstrap';
 import Layout from '../components/common/Layout';
 import { FaTrash, FaSync, FaEdit, FaLaptop, FaCheckCircle, FaClock, FaTimesCircle } from 'react-icons/fa';
-import axios from 'axios';
-
-const API_URL = 'http://127.0.0.1:5062/api';
+import api from '../services/api';
 
 const deviceStyles = `
 .dmp-page {
@@ -156,7 +155,6 @@ const DeviceManagementPage = () => {
   const [error, setError] = useState(null);
   const [deleteSuccess, setDeleteSuccess] = useState(false);
 
-  // Edit modal state
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingDevice, setEditingDevice] = useState(null);
   const [editForm, setEditForm] = useState({ deviceName: '', status: '' });
@@ -168,7 +166,7 @@ const DeviceManagementPage = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get(`${API_URL}/device/all`);
+      const response = await api.get('/device/all');
       setDevices(response.data.data || []);
     } catch (err) {
       console.error('Error fetching devices:', err);
@@ -185,7 +183,7 @@ const DeviceManagementPage = () => {
   const handleDelete = async (deviceId) => {
     if (!window.confirm('Are you sure you want to delete this device?')) return;
     try {
-      await axios.delete(`${API_URL}/device/${deviceId}`);
+      await api.delete(`/device/${deviceId}`);
       fetchDevices();
       setDeleteSuccess(true);
       setTimeout(() => setDeleteSuccess(false), 3000);
@@ -216,12 +214,11 @@ const DeviceManagementPage = () => {
       setEditError('Device name is required');
       return;
     }
-
     setEditLoading(true);
     setEditError(null);
     setEditSuccess(false);
     try {
-      await axios.put(`${API_URL}/device/${editingDevice.id}`, {
+      await api.put(`/device/${editingDevice.id}`, {
         deviceName: editForm.deviceName.trim(),
         status: editForm.status
       });
@@ -239,7 +236,6 @@ const DeviceManagementPage = () => {
     }
   };
 
-  // Count devices by status
   const activeCount = devices.filter(d => d.status === 'ACTIVE').length;
   const inactiveCount = devices.filter(d => d.status === 'INACTIVE').length;
   const pendingCount = devices.filter(d => d.status === 'PENDING').length;
@@ -249,7 +245,6 @@ const DeviceManagementPage = () => {
       <div className="dmp-page">
         <style>{deviceStyles}</style>
         <Container fluid>
-          {/* Header */}
           <div className="dmp-header">
             <div>
               <h2>Device Management</h2>
@@ -290,7 +285,6 @@ const DeviceManagementPage = () => {
             </Alert>
           )}
 
-          {/* Device Table */}
           <Card className="dmp-table-card">
             <Card.Header>
               <span><FaLaptop className="me-2" /> Registered Devices</span>
@@ -363,7 +357,6 @@ const DeviceManagementPage = () => {
             </Card.Body>
           </Card>
 
-          {/* Edit Modal */}
           <Modal show={showEditModal} onHide={() => setShowEditModal(false)} centered>
             <Modal.Header closeButton className="border-0">
               <Modal.Title className="fw-bold">Edit Device</Modal.Title>
