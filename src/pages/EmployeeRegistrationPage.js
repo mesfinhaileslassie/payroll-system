@@ -53,21 +53,54 @@ const erpStyles = `
 .erp-alert.alert-danger {
   border-left-color: #dc3545;
 }
-.erp-activation-alert {
+.erp-activation-card {
+  margin-top: 1.5rem;
+  border: 2px solid #198754;
+  border-radius: 12px;
+  background: #f0fdf4;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+.erp-activation-card .card-header {
+  background: #198754;
+  color: white;
+  font-weight: 600;
   display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+}
+.erp-activation-card .card-header .close-btn {
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
 }
 .erp-activation-code {
-  display: inline-block;
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-family: monospace;
+  font-size: 2rem;
   font-weight: 700;
-  letter-spacing: 0.05em;
-  background: rgba(25, 135, 84, 0.12);
-  color: #146c43;
-  padding: 0.15rem 0.5rem;
+  letter-spacing: 4px;
+  background: white;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #86efac;
+  display: inline-block;
+  margin: 0.5rem 0;
+}
+.erp-regenerate-btn {
+  background: #198754;
+  color: white;
+  border: none;
+  padding: 0.4rem 1.5rem;
   border-radius: 6px;
+  font-weight: 600;
+}
+.erp-regenerate-btn:hover {
+  background: #157347;
+}
+.erp-regenerate-btn:disabled {
+  opacity: 0.6;
 }
 .erp-card {
   border: 1px solid rgba(0, 0, 0, 0.06);
@@ -216,6 +249,7 @@ const EmployeeRegistrationPage = () => {
   const [deviceValid, setDeviceValid] = useState(null);
   const [checkingDevice, setCheckingDevice] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
+  const [showActivationCard, setShowActivationCard] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -290,18 +324,23 @@ const EmployeeRegistrationPage = () => {
     setResult(null);
     setActivationCode('');
     setDeviceId(null);
+    setShowActivationCard(false);
 
     try {
       const response = await api.post('/auth/register-employee', formData);
 
       if (response.data.success) {
+        // Show success message (but we will also show the card)
         setResult({ success: true, message: response.data.message });
 
+        // If device was registered, store activation code and deviceId
         if (response.data.activationCode) {
           setActivationCode(response.data.activationCode);
           setDeviceId(response.data.deviceId);
+          setShowActivationCard(true); // Show the card
         }
 
+        // Clear form fields (except maybe keep them if needed)
         setFormData({
           username: '', email: '', password: '', firstName: '', lastName: '',
           phone: '', gender: '', position: '', deviceCode: '', deviceName: ''
@@ -331,6 +370,7 @@ const EmployeeRegistrationPage = () => {
       if (response.data.success) {
         setActivationCode(response.data.activationCode);
         setResult({ success: true, message: 'Activation code regenerated successfully!' });
+        // Optionally, keep the card open
       } else {
         setResult({ success: false, message: response.data.message || 'Failed to regenerate activation code.' });
       }
@@ -340,6 +380,11 @@ const EmployeeRegistrationPage = () => {
     } finally {
       setRegenerating(false);
     }
+  };
+
+  const closeActivationCard = () => {
+    setShowActivationCard(false);
+    // Optionally, clear the activation code from state
   };
 
   const showDeviceSection = formData.position !== 'Normal Employee' && formData.position !== '';
@@ -362,22 +407,46 @@ const EmployeeRegistrationPage = () => {
           </Alert>
         )}
 
-        {activationCode && (
-          <Alert className="erp-alert erp-activation-alert" variant="success">
-            <span aria-hidden="true">🔑</span>
-            <span>
-              <strong>Activation Code:</strong> <span className="erp-activation-code">{activationCode}</span> -- Give this code to the employee to activate their device.
-            </span>
-            <Button
-              variant="outline-primary"
-              size="sm"
-              className="ms-3"
-              onClick={handleRegenerateCode}
-              disabled={regenerating}
-            >
-              {regenerating ? 'Regenerating...' : 'Regenerate Code'}
-            </Button>
-          </Alert>
+        {/* Activation Code Card */}
+        {showActivationCard && (
+          <Card className="erp-activation-card">
+            <Card.Header>
+              <span>🎉 Device Registered Successfully</span>
+              <button className="close-btn" onClick={closeActivationCard} aria-label="Close">
+                ✕
+              </button>
+            </Card.Header>
+            <Card.Body>
+              <Row>
+                <Col md={8}>
+                  <p><strong>Activation Code:</strong></p>
+                  <div className="erp-activation-code">{activationCode}</div>
+                  <p className="text-muted mt-2">
+                    Give this 6‑digit code to the employee to activate their device.
+                    The code expires in <strong>3 minutes</strong>.
+                  </p>
+                </Col>
+                <Col md={4} className="d-flex flex-column justify-content-center align-items-end">
+                  <Button
+                    variant="success"
+                    className="erp-regenerate-btn"
+                    onClick={handleRegenerateCode}
+                    disabled={regenerating}
+                  >
+                    {regenerating ? <Spinner as="span" animation="border" size="sm" /> : 'Regenerate Code'}
+                  </Button>
+                  <Button
+                    variant="outline-secondary"
+                    size="sm"
+                    className="mt-2"
+                    onClick={closeActivationCard}
+                  >
+                    Close Card
+                  </Button>
+                </Col>
+              </Row>
+            </Card.Body>
+          </Card>
         )}
 
         <Card className="erp-card">
@@ -456,7 +525,6 @@ const EmployeeRegistrationPage = () => {
                       <Form.Select name="position" value={formData.position} onChange={handleChange} required>
                         <option value="">Select position</option>
                         <option value="Normal Employee">Normal Employee</option>
-                        {/* Payroll Officer option removed */}
                         <option value="Finance Manager">Finance Manager</option>
                       </Form.Select>
                     </Form.Group>
