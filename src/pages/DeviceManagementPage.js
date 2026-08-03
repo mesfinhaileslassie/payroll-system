@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Table, Button, Alert, Spinner, Card, Form, Modal, Badge } from 'react-bootstrap';
 import Layout from '../components/common/Layout';
-import { FaTrash, FaSync, FaEdit, FaLaptop, FaCheckCircle, FaClock, FaTimesCircle } from 'react-icons/fa';
+import { FaTrash, FaSync, FaEdit, FaLaptop, FaCheckCircle, FaClock, FaTimesCircle, FaKey } from 'react-icons/fa';
 import api from '../services/api';
 
 const deviceStyles = `
@@ -100,6 +100,7 @@ const deviceStyles = `
 .dmp-actions {
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
 .dmp-action-btn {
   padding: 0.35rem 0.8rem;
@@ -126,6 +127,13 @@ const deviceStyles = `
 .dmp-action-btn-delete:hover {
   background: #fecaca;
 }
+.dmp-action-btn-generate {
+  background: #fef3c7;
+  color: #92400e;
+}
+.dmp-action-btn-generate:hover {
+  background: #fde68a;
+}
 .dmp-empty-state {
   display: flex;
   flex-direction: column;
@@ -138,6 +146,21 @@ const deviceStyles = `
   font-size: 2.5rem;
   margin-bottom: 0.75rem;
   opacity: 0.4;
+}
+.activation-code-modal .modal-content {
+  border-radius: 16px;
+}
+.activation-code-modal .code-display {
+  font-family: monospace;
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: 6px;
+  text-align: center;
+  background: #f8fafc;
+  padding: 1rem;
+  border-radius: 10px;
+  border: 1px solid #e9edf4;
+  color: #0b2b4a;
 }
 @media (max-width: 768px) {
   .dmp-page {
@@ -155,12 +178,19 @@ const DeviceManagementPage = () => {
   const [error, setError] = useState(null);
   const [deleteSuccess, setDeleteSuccess] = useState(false);
 
+  // Edit modal state
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingDevice, setEditingDevice] = useState(null);
   const [editForm, setEditForm] = useState({ deviceName: '', status: '' });
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState(null);
   const [editSuccess, setEditSuccess] = useState(false);
+
+  // Generate activation code modal
+  const [showActivationModal, setShowActivationModal] = useState(false);
+  const [generatedActivationCode, setGeneratedActivationCode] = useState('');
+  const [regenerating, setRegenerating] = useState(false);
+  const [regeneratingError, setRegeneratingError] = useState(null);
 
   const fetchDevices = async () => {
     setLoading(true);
@@ -234,6 +264,35 @@ const DeviceManagementPage = () => {
     } finally {
       setEditLoading(false);
     }
+  };
+
+  // Handler for Generate Activation Code
+  const handleGenerateCode = async (deviceId) => {
+    setRegenerating(true);
+    setRegeneratingError(null);
+    setGeneratedActivationCode('');
+    try {
+      const response = await api.post(`/device/${deviceId}/regenerate-activation`);
+      if (response.data.success) {
+        setGeneratedActivationCode(response.data.activationCode);
+        setShowActivationModal(true);
+        // Refresh devices to update the list (optional)
+        fetchDevices();
+      } else {
+        setRegeneratingError(response.data.message || 'Failed to regenerate activation code');
+      }
+    } catch (err) {
+      console.error('Error regenerating activation code:', err);
+      setRegeneratingError(err.response?.data?.message || 'Error regenerating activation code');
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
+  const closeActivationModal = () => {
+    setShowActivationModal(false);
+    setGeneratedActivationCode('');
+    setRegeneratingError(null);
   };
 
   const activeCount = devices.filter(d => d.status === 'ACTIVE').length;
@@ -332,6 +391,7 @@ const DeviceManagementPage = () => {
                           <td>{device.userId}</td>
                           <td>
                             <div className="dmp-actions">
+                              {/* Edit */}
                               <Button
                                 variant="link"
                                 className="dmp-action-btn dmp-action-btn-edit"
@@ -339,6 +399,20 @@ const DeviceManagementPage = () => {
                               >
                                 <FaEdit /> Edit
                               </Button>
+
+                              {/* Generate Activation Code – only for PENDING */}
+                              {device.status === 'PENDING' && (
+                                <Button
+                                  variant="link"
+                                  className="dmp-action-btn dmp-action-btn-generate"
+                                  onClick={() => handleGenerateCode(device.id)}
+                                  disabled={regenerating}
+                                >
+                                  <FaKey /> Generate Code
+                                </Button>
+                              )}
+
+                              {/* Delete */}
                               <Button
                                 variant="link"
                                 className="dmp-action-btn dmp-action-btn-delete"
@@ -357,6 +431,7 @@ const DeviceManagementPage = () => {
             </Card.Body>
           </Card>
 
+          {/* Edit Modal */}
           <Modal show={showEditModal} onHide={() => setShowEditModal(false)} centered>
             <Modal.Header closeButton className="border-0">
               <Modal.Title className="fw-bold">Edit Device</Modal.Title>
@@ -397,6 +472,37 @@ const DeviceManagementPage = () => {
                 </div>
               </Form>
             </Modal.Body>
+          </Modal>
+
+          {/* Activation Code Modal */}
+          <Modal
+            show={showActivationModal}
+            onHide={closeActivationModal}
+            centered
+            className="activation-code-modal"
+          >
+            <Modal.Header closeButton className="border-0">
+              <Modal.Title className="fw-bold">Activation Code Generated</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              {regeneratingError && (
+                <Alert variant="danger">{regeneratingError}</Alert>
+              )}
+              {generatedActivationCode && (
+                <>
+                  <p className="text-muted">Copy this code and give it to the user to activate their device.</p>
+                  <div className="code-display">{generatedActivationCode}</div>
+                  <p className="text-muted mt-3">
+                    <small>The code expires in <strong>3 minutes</strong>.</small>
+                  </p>
+                </>
+              )}
+            </Modal.Body>
+            <Modal.Footer className="border-0">
+              <Button variant="primary" onClick={closeActivationModal}>
+                Close
+              </Button>
+            </Modal.Footer>
           </Modal>
         </Container>
       </div>

@@ -1,11 +1,9 @@
 // src/pages/EmployeeRegistrationPage.js
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Container, Card, Form, Button, Alert, Row, Col, Spinner } from 'react-bootstrap';
 import Layout from '../components/common/Layout';
 import api from '../services/api';
-
-const API_URL = 'http://127.0.0.1:5062/api';
 
 const erpStyles = `
 .erp-page {
@@ -25,8 +23,8 @@ const erpStyles = `
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: rgba(13, 110, 253, 0.1);
-  color: #0d6efd;
+  background: rgba(158, 0, 0, 0.1);
+  color: #9E0000;
   font-size: 1.25rem;
   flex-shrink: 0;
 }
@@ -52,55 +50,6 @@ const erpStyles = `
 }
 .erp-alert.alert-danger {
   border-left-color: #dc3545;
-}
-.erp-activation-card {
-  margin-top: 1.5rem;
-  border: 2px solid #198754;
-  border-radius: 12px;
-  background: #f0fdf4;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-}
-.erp-activation-card .card-header {
-  background: #198754;
-  color: white;
-  font-weight: 600;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.erp-activation-card .card-header .close-btn {
-  background: transparent;
-  border: none;
-  color: white;
-  font-size: 1.5rem;
-  line-height: 1;
-  cursor: pointer;
-}
-.erp-activation-code {
-  font-family: monospace;
-  font-size: 2rem;
-  font-weight: 700;
-  letter-spacing: 4px;
-  background: white;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  border: 1px solid #86efac;
-  display: inline-block;
-  margin: 0.5rem 0;
-}
-.erp-regenerate-btn {
-  background: #198754;
-  color: white;
-  border: none;
-  padding: 0.4rem 1.5rem;
-  border-radius: 6px;
-  font-weight: 600;
-}
-.erp-regenerate-btn:hover {
-  background: #157347;
-}
-.erp-regenerate-btn:disabled {
-  opacity: 0.6;
 }
 .erp-card {
   border: 1px solid rgba(0, 0, 0, 0.06);
@@ -135,7 +84,7 @@ const erpStyles = `
   width: 22px;
   height: 22px;
   border-radius: 6px;
-  background: #0d6efd;
+  background: #9E0000;
   color: #fff;
   font-size: 0.7rem;
   font-weight: 700;
@@ -215,6 +164,138 @@ const erpStyles = `
 .erp-submit-btn:disabled {
   box-shadow: none;
 }
+.activation-card-container {
+  margin-top: 1.5rem;
+}
+.activation-card {
+  border: 2px solid #9E0000;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+  overflow: hidden;
+}
+.activation-card-header {
+  background: #9E0000;
+  color: white;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.activation-card-header .close-btn {
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 1.8rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.activation-card-body {
+  padding: 2rem;
+}
+.activation-employee-info {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+.activation-employee-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #9E0000;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+.activation-employee-details {
+  flex: 1;
+}
+.activation-employee-details .name {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+.activation-employee-details .position {
+  color: #9E0000;
+  font-weight: 600;
+}
+.activation-employee-details .id {
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+.activation-employee-details .contact {
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+.activation-code-box {
+  background: #f8f9fa;
+  border: 1px solid #e9edf4;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 1rem 0;
+  text-align: center;
+}
+.activation-code-box .code {
+  font-family: monospace;
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: 6px;
+  color: #9E0000;
+  background: white;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  display: inline-block;
+  border: 1px solid #f0d6d6;
+}
+.activation-timer {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #9E0000;
+}
+.activation-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+}
+.activation-actions .btn-regenerate {
+  background: #9E0000;
+  border: none;
+  padding: 0.5rem 2rem;
+  border-radius: 8px;
+  font-weight: 600;
+  color: white;
+}
+.activation-actions .btn-regenerate:hover {
+  background: #7a0000;
+}
+.activation-actions .btn-close-card {
+  background: transparent;
+  border: 1px solid #9E0000;
+  color: #9E0000;
+  padding: 0.5rem 2rem;
+  border-radius: 8px;
+  font-weight: 600;
+}
+.activation-actions .btn-close-card:hover {
+  background: #9E0000;
+  color: white;
+}
+.activation-authorized {
+  margin-top: 1rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: #9E0000;
+  font-weight: 600;
+  letter-spacing: 2px;
+  border-top: 1px solid #e9edf4;
+  padding-top: 1rem;
+}
 @media (max-width: 767.98px) {
   .erp-card .card-body {
     padding: 1.25rem;
@@ -224,6 +305,13 @@ const erpStyles = `
   }
   .erp-submit-btn {
     width: 100%;
+  }
+  .activation-employee-info {
+    flex-direction: column;
+    text-align: center;
+  }
+  .activation-actions {
+    flex-direction: column;
   }
 }
 `;
@@ -249,18 +337,65 @@ const EmployeeRegistrationPage = () => {
   const [deviceValid, setDeviceValid] = useState(null);
   const [checkingDevice, setCheckingDevice] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
-  const [showActivationCard, setShowActivationCard] = useState(false);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  const [registeredEmployee, setRegisteredEmployee] = useState(null);
+
+  // Timer state for activation card (3 minutes)
+  const [timeLeft, setTimeLeft] = useState(180);
+  const [timerExpired, setTimerExpired] = useState(false);
+
+  // Password strength
+  const [passwordStrength, setPasswordStrength] = useState('');
+
+  useEffect(() => {
+    let interval = null;
+    if (registrationSuccess && activationCode) {
+      setTimeLeft(180);
+      setTimerExpired(false);
+      interval = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            setTimerExpired(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [registrationSuccess, activationCode]);
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
+
+  const checkPasswordStrength = (password) => {
+    if (password.length < 6) return 'weak';
+    let score = 0;
+    if (password.length >= 8) score++;
+    if (/[A-Z]/.test(password)) score++;
+    if (/[0-9]/.test(password)) score++;
+    if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) score++;
+    if (score <= 1) return 'weak';
+    if (score <= 3) return 'medium';
+    return 'strong';
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
-
     if (name === 'position' && value === 'Normal Employee') {
       setFormData(prev => ({ ...prev, deviceCode: '', deviceName: '' }));
       setDeviceValid(null);
     }
     if (name === 'deviceCode') {
       setDeviceValid(null);
+    }
+    if (name === 'password') {
+      setPasswordStrength(checkPasswordStrength(value));
     }
   };
 
@@ -279,7 +414,6 @@ const EmployeeRegistrationPage = () => {
       setResult({ success: false, message: 'Invalid device code. Please paste a valid device code.' });
       return;
     }
-
     setCheckingDevice(true);
     setResult(null);
     try {
@@ -300,6 +434,12 @@ const EmployeeRegistrationPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Password strength check
+    if (passwordStrength === 'weak') {
+      setResult({ success: false, message: 'Password is too weak. Please use a stronger password (at least 8 characters, include uppercase, number, special character).' });
+      return;
+    }
 
     if (formData.position !== 'Normal Employee' && formData.deviceCode) {
       const installationId = extractInstallationId(formData.deviceCode);
@@ -322,30 +462,36 @@ const EmployeeRegistrationPage = () => {
 
     setLoading(true);
     setResult(null);
-    setActivationCode('');
-    setDeviceId(null);
-    setShowActivationCard(false);
 
     try {
       const response = await api.post('/auth/register-employee', formData);
 
       if (response.data.success) {
-        // Show success message (but we will also show the card)
         setResult({ success: true, message: response.data.message });
-
-        // If device was registered, store activation code and deviceId
         if (response.data.activationCode) {
           setActivationCode(response.data.activationCode);
           setDeviceId(response.data.deviceId);
-          setShowActivationCard(true); // Show the card
+          // Build employee object
+          const emp = {
+            firstName: formData.firstName || 'Employee',
+            lastName: formData.lastName || '',
+            position: formData.position || 'Staff',
+            username: formData.username,
+            email: formData.email,
+            phone: formData.phone || 'N/A',
+            id: response.data.userId || 'N/A'
+          };
+          setRegisteredEmployee(emp);
+          setRegistrationSuccess(true);
+        } else {
+          // No device – just show success and reset form
+          setFormData({
+            username: '', email: '', password: '', firstName: '', lastName: '',
+            phone: '', gender: '', position: '', deviceCode: '', deviceName: ''
+          });
+          setDeviceValid(null);
+          setPasswordStrength('');
         }
-
-        // Clear form fields (except maybe keep them if needed)
-        setFormData({
-          username: '', email: '', password: '', firstName: '', lastName: '',
-          phone: '', gender: '', position: '', deviceCode: '', deviceName: ''
-        });
-        setDeviceValid(null);
       } else {
         setResult({ success: false, message: response.data.message || 'Registration failed' });
       }
@@ -362,15 +508,15 @@ const EmployeeRegistrationPage = () => {
       setResult({ success: false, message: 'No device ID found to regenerate activation code.' });
       return;
     }
-
     setRegenerating(true);
     setResult(null);
     try {
       const response = await api.post(`/device/${deviceId}/regenerate-activation`);
       if (response.data.success) {
         setActivationCode(response.data.activationCode);
+        setTimerExpired(false);
+        setTimeLeft(180);
         setResult({ success: true, message: 'Activation code regenerated successfully!' });
-        // Optionally, keep the card open
       } else {
         setResult({ success: false, message: response.data.message || 'Failed to regenerate activation code.' });
       }
@@ -383,8 +529,20 @@ const EmployeeRegistrationPage = () => {
   };
 
   const closeActivationCard = () => {
-    setShowActivationCard(false);
-    // Optionally, clear the activation code from state
+    setRegistrationSuccess(false);
+    setActivationCode('');
+    setDeviceId(null);
+    setRegisteredEmployee(null);
+    setTimerExpired(false);
+    setTimeLeft(180);
+    setResult(null);
+    // Optionally reset form fields
+    setFormData({
+      username: '', email: '', password: '', firstName: '', lastName: '',
+      phone: '', gender: '', position: '', deviceCode: '', deviceName: ''
+    });
+    setDeviceValid(null);
+    setPasswordStrength('');
   };
 
   const showDeviceSection = formData.position !== 'Normal Employee' && formData.position !== '';
@@ -407,185 +565,213 @@ const EmployeeRegistrationPage = () => {
           </Alert>
         )}
 
-        {/* Activation Code Card */}
-        {showActivationCard && (
-          <Card className="erp-activation-card">
-            <Card.Header>
-              <span>🎉 Device Registered Successfully</span>
-              <button className="close-btn" onClick={closeActivationCard} aria-label="Close">
-                ✕
-              </button>
-            </Card.Header>
-            <Card.Body>
-              <Row>
-                <Col md={8}>
-                  <p><strong>Activation Code:</strong></p>
-                  <div className="erp-activation-code">{activationCode}</div>
-                  <p className="text-muted mt-2">
-                    Give this 6‑digit code to the employee to activate their device.
-                    The code expires in <strong>3 minutes</strong>.
-                  </p>
-                </Col>
-                <Col md={4} className="d-flex flex-column justify-content-center align-items-end">
+        {/* Activation Card – shown when registration with device is successful */}
+        {registrationSuccess && registeredEmployee && (
+          <div className="activation-card-container">
+            <Card className="activation-card">
+              <Card.Header className="activation-card-header">
+                <span>🎉 Device Registered Successfully</span>
+                <button className="close-btn" onClick={closeActivationCard} aria-label="Close">✕</button>
+              </Card.Header>
+              <Card.Body className="activation-card-body">
+                <div className="activation-employee-info">
+                  <div className="activation-employee-avatar">
+                    {registeredEmployee.firstName.charAt(0)}
+                  </div>
+                  <div className="activation-employee-details">
+                    <div className="name">{registeredEmployee.firstName} {registeredEmployee.lastName}</div>
+                    <div className="position">{registeredEmployee.position}</div>
+                    <div className="id">ID No: {registeredEmployee.id}</div>
+                    <div className="contact">Phone: {registeredEmployee.phone}</div>
+                    <div className="contact">Email: {registeredEmployee.email}</div>
+                  </div>
+                </div>
+
+                <div className="activation-code-box">
+                  <div style={{ fontSize: '0.9rem', color: '#6c757d', marginBottom: '8px' }}>Activation Code</div>
+                  <div className="code">{activationCode}</div>
+                  <div style={{ marginTop: '12px' }}>
+                    {timerExpired ? (
+                      <span style={{ color: '#dc3545', fontWeight: 'bold' }}>Code expired. Please regenerate.</span>
+                    ) : (
+                      <span className="activation-timer">⏱ {formatTime(timeLeft)} remaining</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="activation-actions">
                   <Button
-                    variant="success"
-                    className="erp-regenerate-btn"
+                    className="btn-regenerate"
                     onClick={handleRegenerateCode}
                     disabled={regenerating}
                   >
                     {regenerating ? <Spinner as="span" animation="border" size="sm" /> : 'Regenerate Code'}
                   </Button>
-                  <Button
-                    variant="outline-secondary"
-                    size="sm"
-                    className="mt-2"
-                    onClick={closeActivationCard}
-                  >
+                  <Button className="btn-close-card" onClick={closeActivationCard}>
                     Close Card
                   </Button>
-                </Col>
-              </Row>
+                </div>
+
+                
+              </Card.Body>
+            </Card>
+          </div>
+        )}
+
+        {/* Registration Form – hidden when activation card is shown */}
+        {!registrationSuccess && (
+          <Card className="erp-card">
+            <Card.Body>
+              <Form onSubmit={handleSubmit}>
+                <div className="erp-section">
+                  <div className="erp-section-title">
+                    <span className="erp-badge">1</span> Account Credentials
+                  </div>
+                  <Row>
+                    <Col md={4}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="erp-form-label">Username *</Form.Label>
+                        <Form.Control name="username" value={formData.username} onChange={handleChange} required />
+                      </Form.Group>
+                    </Col>
+                    <Col md={4}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="erp-form-label">Email *</Form.Label>
+                        <Form.Control name="email" type="email" value={formData.email} onChange={handleChange} required />
+                      </Form.Group>
+                    </Col>
+                    <Col md={4}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="erp-form-label">Password *</Form.Label>
+                        <Form.Control
+                          name="password"
+                          type="password"
+                          value={formData.password}
+                          onChange={handleChange}
+                          required
+                        />
+                        <Form.Text className="text-muted">
+                          {passwordStrength && (
+                            <span style={{ fontWeight: 'bold', color: passwordStrength === 'weak' ? '#dc3545' : passwordStrength === 'medium' ? '#ffc107' : '#28a745' }}>
+                              Strength: {passwordStrength.toUpperCase()}
+                            </span>
+                          )}
+                        </Form.Text>
+                      </Form.Group>
+                    </Col>
+                  </Row>
+                </div>
+
+                <div className="erp-section">
+                  <div className="erp-section-title">
+                    <span className="erp-badge">2</span> Personal Details
+                  </div>
+                  <Row>
+                    <Col md={3}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="erp-form-label">First Name</Form.Label>
+                        <Form.Control name="firstName" value={formData.firstName} onChange={handleChange} />
+                      </Form.Group>
+                    </Col>
+                    <Col md={3}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="erp-form-label">Last Name</Form.Label>
+                        <Form.Control name="lastName" value={formData.lastName} onChange={handleChange} />
+                      </Form.Group>
+                    </Col>
+                    <Col md={3}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="erp-form-label">Phone</Form.Label>
+                        <Form.Control name="phone" value={formData.phone} onChange={handleChange} />
+                      </Form.Group>
+                    </Col>
+                    <Col md={3}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="erp-form-label">Gender</Form.Label>
+                        <Form.Select name="gender" value={formData.gender} onChange={handleChange}>
+                          <option value="">Select</option>
+                          <option value="Male">Male</option>
+                          <option value="Female">Female</option>
+                        </Form.Select>
+                      </Form.Group>
+                    </Col>
+                  </Row>
+                </div>
+
+                <div className="erp-section">
+                  <div className="erp-section-title">
+                    <span className="erp-badge">3</span> Role / Position
+                  </div>
+                  <Row>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="erp-form-label">Position *</Form.Label>
+                        <Form.Select name="position" value={formData.position} onChange={handleChange} required>
+                          <option value="">Select position</option>
+                          <option value="Normal Employee">Normal Employee</option>
+                          <option value="Finance Manager">Finance Manager</option>
+                        </Form.Select>
+                      </Form.Group>
+                    </Col>
+                  </Row>
+                </div>
+
+                {showDeviceSection && (
+                  <>
+                    <hr className="erp-divider" />
+                    <div className="erp-section">
+                      <div className="erp-section-title">
+                        <span className="erp-badge">4</span> Device Registration
+                      </div>
+                      <div className="erp-device-box">
+                        <Row>
+                          <Col md={8}>
+                            <Form.Group className="mb-3">
+                              <Form.Label className="erp-form-label">Device Code (from employee's Soft Token app)</Form.Label>
+                              <Form.Control as="textarea" rows={3} name="deviceCode" value={formData.deviceCode} onChange={handleChange} />
+                            </Form.Group>
+                          </Col>
+                          <Col md={4}>
+                            <Form.Group className="mb-3">
+                              <Form.Label className="erp-form-label">Device Name</Form.Label>
+                              <Form.Control name="deviceName" value={formData.deviceName} onChange={handleChange} placeholder="Optional" />
+                            </Form.Group>
+                            <Button
+                              variant="outline-secondary"
+                              size="sm"
+                              onClick={checkDevice}
+                              disabled={!formData.deviceCode || checkingDevice}
+                              className="mt-2 erp-check-btn"
+                            >
+                              {checkingDevice ? <Spinner as="span" animation="border" size="sm" /> : 'Check Device'}
+                            </Button>
+                            {deviceValid === true && <span className="text-success erp-device-status">✅ Available</span>}
+                            {deviceValid === false && <span className="text-danger erp-device-status">❌ Already Registered</span>}
+                          </Col>
+                        </Row>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                <div className="erp-footer-actions">
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    className="erp-submit-btn"
+                    disabled={
+                      loading ||
+                      (formData.position !== 'Normal Employee' && formData.deviceCode && deviceValid === false) ||
+                      passwordStrength === 'weak'
+                    }
+                  >
+                    {loading ? 'Registering...' : 'Register Employee'}
+                  </Button>
+                </div>
+              </Form>
             </Card.Body>
           </Card>
         )}
-
-        <Card className="erp-card">
-          <Card.Body>
-            <Form onSubmit={handleSubmit}>
-              <div className="erp-section">
-                <div className="erp-section-title">
-                  <span className="erp-badge">1</span> Account Credentials
-                </div>
-                <Row>
-                  <Col md={4}>
-                    <Form.Group className="mb-3">
-                      <Form.Label className="erp-form-label">Username *</Form.Label>
-                      <Form.Control name="username" value={formData.username} onChange={handleChange} required />
-                    </Form.Group>
-                  </Col>
-                  <Col md={4}>
-                    <Form.Group className="mb-3">
-                      <Form.Label className="erp-form-label">Email *</Form.Label>
-                      <Form.Control name="email" type="email" value={formData.email} onChange={handleChange} required />
-                    </Form.Group>
-                  </Col>
-                  <Col md={4}>
-                    <Form.Group className="mb-3">
-                      <Form.Label className="erp-form-label">Password *</Form.Label>
-                      <Form.Control name="password" type="password" value={formData.password} onChange={handleChange} required />
-                    </Form.Group>
-                  </Col>
-                </Row>
-              </div>
-
-              <div className="erp-section">
-                <div className="erp-section-title">
-                  <span className="erp-badge">2</span> Personal Details
-                </div>
-                <Row>
-                  <Col md={3}>
-                    <Form.Group className="mb-3">
-                      <Form.Label className="erp-form-label">First Name</Form.Label>
-                      <Form.Control name="firstName" value={formData.firstName} onChange={handleChange} />
-                    </Form.Group>
-                  </Col>
-                  <Col md={3}>
-                    <Form.Group className="mb-3">
-                      <Form.Label className="erp-form-label">Last Name</Form.Label>
-                      <Form.Control name="lastName" value={formData.lastName} onChange={handleChange} />
-                    </Form.Group>
-                  </Col>
-                  <Col md={3}>
-                    <Form.Group className="mb-3">
-                      <Form.Label className="erp-form-label">Phone</Form.Label>
-                      <Form.Control name="phone" value={formData.phone} onChange={handleChange} />
-                    </Form.Group>
-                  </Col>
-                  <Col md={3}>
-                    <Form.Group className="mb-3">
-                      <Form.Label className="erp-form-label">Gender</Form.Label>
-                      <Form.Select name="gender" value={formData.gender} onChange={handleChange}>
-                        <option value="">Select</option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                      </Form.Select>
-                    </Form.Group>
-                  </Col>
-                </Row>
-              </div>
-
-              <div className="erp-section">
-                <div className="erp-section-title">
-                  <span className="erp-badge">3</span> Role / Position
-                </div>
-                <Row>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label className="erp-form-label">Position *</Form.Label>
-                      <Form.Select name="position" value={formData.position} onChange={handleChange} required>
-                        <option value="">Select position</option>
-                        <option value="Normal Employee">Normal Employee</option>
-                        <option value="Finance Manager">Finance Manager</option>
-                      </Form.Select>
-                    </Form.Group>
-                  </Col>
-                </Row>
-              </div>
-
-              {showDeviceSection && (
-                <>
-                  <hr className="erp-divider" />
-                  <div className="erp-section">
-                    <div className="erp-section-title">
-                      <span className="erp-badge">4</span> Device Registration
-                    </div>
-                    <div className="erp-device-box">
-                      <Row>
-                        <Col md={8}>
-                          <Form.Group className="mb-3">
-                            <Form.Label className="erp-form-label">Device Code (from employee's Soft Token app)</Form.Label>
-                            <Form.Control as="textarea" rows={3} name="deviceCode" value={formData.deviceCode} onChange={handleChange} />
-                          </Form.Group>
-                        </Col>
-                        <Col md={4}>
-                          <Form.Group className="mb-3">
-                            <Form.Label className="erp-form-label">Device Name</Form.Label>
-                            <Form.Control name="deviceName" value={formData.deviceName} onChange={handleChange} placeholder="Optional" />
-                          </Form.Group>
-                          <Button
-                            variant="outline-secondary"
-                            size="sm"
-                            onClick={checkDevice}
-                            disabled={!formData.deviceCode || checkingDevice}
-                            className="mt-2 erp-check-btn"
-                          >
-                            {checkingDevice ? <Spinner as="span" animation="border" size="sm" /> : 'Check Device'}
-                          </Button>
-                          {deviceValid === true && <span className="text-success erp-device-status">✅ Available</span>}
-                          {deviceValid === false && <span className="text-danger erp-device-status">❌ Already Registered</span>}
-                        </Col>
-                      </Row>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              <div className="erp-footer-actions">
-                <Button
-                  type="submit"
-                  variant="primary"
-                  className="erp-submit-btn"
-                  disabled={
-                    loading ||
-                    (formData.position !== 'Normal Employee' && formData.deviceCode && deviceValid === false)
-                  }
-                >
-                  {loading ? 'Registering...' : 'Register Employee'}
-                </Button>
-              </div>
-            </Form>
-          </Card.Body>
-        </Card>
       </Container>
     </Layout>
   );
