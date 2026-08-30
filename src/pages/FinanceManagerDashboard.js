@@ -1,7 +1,17 @@
-// src/pages/FinanceManagerDashboard.js
-
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Button, Table, Badge, Spinner, Modal, Form, Alert } from 'react-bootstrap';
+import {
+  Container,
+  Row,
+  Col,
+  Card,
+  Button,
+  Table,
+  Badge,
+  Spinner,
+  Modal,
+  Form,
+  Alert,
+} from 'react-bootstrap';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import { useNavigate } from 'react-router-dom';
@@ -13,8 +23,91 @@ import {
   FaSync,
   FaWallet,
   FaChartLine,
-  FaSignOutAlt
+  FaSignOutAlt,
+  FaPrint,
 } from 'react-icons/fa';
+
+// ✅ Print Styles – hides everything except the receipt div
+const printStyles = `
+  /* Hide everything on screen */
+  .receipt-print-hidden {
+    display: none;
+  }
+
+  @media print {
+    /* Hide all body content except the receipt print area */
+    body * {
+      visibility: hidden;
+    }
+    #receipt-print-area, #receipt-print-area * {
+      visibility: visible;
+    }
+    #receipt-print-area {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      background: white;
+      padding: 30px 20px;
+      font-family: 'Courier New', monospace;
+      color: #000;
+      display: block !important; /* Override any hiding */
+    }
+    .no-print {
+      display: none !important;
+    }
+    /* Ensure Bootstrap modals don't interfere */
+    .modal {
+      display: none !important;
+    }
+  }
+
+  /* Receipt styling (visible on screen and print) */
+  .receipt-container {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    font-family: 'Courier New', monospace;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  .receipt-title {
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;
+    border-bottom: 2px solid #000;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+  }
+  .receipt-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px dashed #ccc;
+  }
+  .receipt-row:last-child {
+    border-bottom: none;
+  }
+  .receipt-label {
+    font-weight: 600;
+  }
+  .receipt-total {
+    font-size: 20px;
+    font-weight: bold;
+    text-align: right;
+    margin-top: 20px;
+    border-top: 2px solid #000;
+    padding-top: 10px;
+  }
+  .receipt-footer {
+    margin-top: 30px;
+    text-align: center;
+    font-size: 12px;
+    color: #666;
+    border-top: 1px solid #ccc;
+    padding-top: 10px;
+  }
+`;
 
 const FinanceManagerDashboard = () => {
   const { user, logout } = useAuth();
@@ -36,18 +129,22 @@ const FinanceManagerDashboard = () => {
   const [paying, setPaying] = useState(false);
   const [payResult, setPayResult] = useState(null);
 
-  // Paid months for the selected employee
+  // Paid months
   const [paidMonths, setPaidMonths] = useState([]);
   const [loadingPaidMonths, setLoadingPaidMonths] = useState(false);
 
+  // Receipt modal
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [receiptData, setReceiptData] = useState(null);
+
+  // Statistics
   const [stats, setStats] = useState({
     totalEmployees: 0,
     totalPaid: 0,
     pendingPayments: 0,
-    recentPayments: 0
+    recentPayments: 0,
   });
 
-  // Year range: from 2020 to current year + 1
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 12 }, (_, i) => currentYear - 5 + i);
   const months = [
@@ -62,7 +159,7 @@ const FinanceManagerDashboard = () => {
     { value: '09', label: 'September' },
     { value: '10', label: 'October' },
     { value: '11', label: 'November' },
-    { value: '12', label: 'December' }
+    { value: '12', label: 'December' },
   ];
 
   useEffect(() => {
@@ -78,7 +175,7 @@ const FinanceManagerDashboard = () => {
       const empRes = await api.get('/users/employees');
       const employeesData = empRes.data.data || [];
       setEmployees(employeesData);
-      setStats(prev => ({ ...prev, totalEmployees: employeesData.length }));
+      setStats((prev) => ({ ...prev, totalEmployees: employeesData.length }));
     } catch (err) {
       console.error('Error fetching employees:', err);
       setError('Failed to load employees. Please refresh.');
@@ -88,13 +185,17 @@ const FinanceManagerDashboard = () => {
       const payRes = await api.get('/salary/all');
       const payments = payRes.data.data || [];
       setSalaryPayments(payments);
-      const totalPaid = payments.reduce((sum, p) => sum + (p.status === 'APPROVED' ? p.amount : 0), 0);
-      const pendingPayments = payments.filter(p => p.status === 'PENDING').length;
-      setStats(prev => ({
+      const totalPaid = payments.reduce(
+        (sum, p) => sum + (p.status === 'APPROVED' ? p.amount : 0),
+        0
+      );
+      const pendingPayments = payments.filter((p) => p.status === 'PENDING')
+        .length;
+      setStats((prev) => ({
         ...prev,
         totalPaid,
         pendingPayments,
-        recentPayments: payments.length
+        recentPayments: payments.length,
       }));
     } catch (err) {
       console.error('Error fetching salary payments:', err);
@@ -113,18 +214,16 @@ const FinanceManagerDashboard = () => {
     navigate('/login');
   };
 
-  const handlePayClick = (employee) => {
+  const handlePayClick = async (employee) => {
     setSelectedEmployee(employee);
     setAmount('');
-    // Set default to current month and year
     const now = new Date();
     setSelectedYear(now.getFullYear().toString());
     setSelectedMonth(String(now.getMonth() + 1).padStart(2, '0'));
     setOtp('');
     setPayResult(null);
     setPaidMonths([]);
-    // Fetch paid months for this employee
-    fetchPaidMonths(employee.id);
+    await fetchPaidMonths(employee.id);
     setShowModal(true);
   };
 
@@ -153,18 +252,15 @@ const FinanceManagerDashboard = () => {
       setPayResult({ success: false, message: 'Please enter a valid amount' });
       return;
     }
-
     if (!selectedYear || !selectedMonth) {
       setPayResult({ success: false, message: 'Please select a year and month' });
       return;
     }
-
     const paymentMonth = `${selectedYear}-${selectedMonth}`;
     if (isMonthPaid(selectedYear, selectedMonth)) {
       setPayResult({ success: false, message: 'Salary for this month has already been paid.' });
       return;
     }
-
     if (!otp || otp.length !== 6 || !/^\d{6}$/.test(otp)) {
       setPayResult({ success: false, message: 'Please enter a valid 6-digit OTP' });
       return;
@@ -179,11 +275,24 @@ const FinanceManagerDashboard = () => {
         amount: parseFloat(amount),
         paymentMonth: paymentMonth,
         username: user.username,
-        otp: otp.trim()
+        otp: otp.trim(),
       });
 
       if (response.data.success) {
-        setPayResult({ success: true, message: `✅ Salary paid to ${selectedEmployee.firstName} ${selectedEmployee.lastName}!` });
+        setPayResult({
+          success: true,
+          message: `✅ Salary paid to ${selectedEmployee.firstName} ${selectedEmployee.lastName}!`,
+        });
+        setReceiptData({
+          employeeName: `${selectedEmployee.firstName} ${selectedEmployee.lastName}`,
+          employeeId: selectedEmployee.id,
+          amount: parseFloat(amount),
+          paymentMonth: paymentMonth,
+          approvedAt: new Date().toLocaleString(),
+          approvedBy: user.username,
+          receiptNumber: `PAY-${Date.now().toString().slice(-8)}`,
+        });
+        setShowReceiptModal(true);
         setTimeout(() => {
           setShowModal(false);
           fetchData();
@@ -199,294 +308,432 @@ const FinanceManagerDashboard = () => {
     }
   };
 
+  // ✅ Print handler – triggers print dialog
+  const handlePrintReceipt = () => {
+    window.print();
+  };
+
+  // Render the receipt content (used both in modal and hidden print area)
+  const renderReceipt = (data) => {
+    if (!data) return null;
+    return (
+      <>
+        <div className="receipt-title">PAYMENT RECEIPT</div>
+        <div className="receipt-row">
+          <span className="receipt-label">Receipt #</span>
+          <span>{data.receiptNumber}</span>
+        </div>
+        <div className="receipt-row">
+          <span className="receipt-label">Employee</span>
+          <span>{data.employeeName}</span>
+        </div>
+        <div className="receipt-row">
+          <span className="receipt-label">Employee ID</span>
+          <span>{data.employeeId}</span>
+        </div>
+        <div className="receipt-row">
+          <span className="receipt-label">Payment Month</span>
+          <span>{data.paymentMonth}</span>
+        </div>
+        <div className="receipt-row">
+          <span className="receipt-label">Amount</span>
+          <span>{data.amount.toLocaleString()} birr</span>
+        </div>
+        <div className="receipt-row">
+          <span className="receipt-label">Approved By</span>
+          <span>{data.approvedBy}</span>
+        </div>
+        <div className="receipt-row">
+          <span className="receipt-label">Approved At</span>
+          <span>{data.approvedAt}</span>
+        </div>
+        <div className="receipt-total">
+          Total: {data.amount.toLocaleString()} birr
+        </div>
+        <div className="receipt-footer">
+          This is a system-generated receipt. Please keep for your records.
+        </div>
+      </>
+    );
+  };
+
   if (loading && employees.length === 0) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '80vh' }}>
+      <div
+        className="d-flex justify-content-center align-items-center"
+        style={{ minHeight: '80vh' }}
+      >
         <Spinner animation="border" variant="primary" />
       </div>
     );
   }
 
   return (
-    <div style={{ background: '#f0f4f8', minHeight: '100vh', padding: '2rem 1.5rem' }}>
-      <Container fluid>
-        <Row className="mb-4 align-items-center">
-          <Col>
-            <h1 className="display-5 fw-bold" style={{ color: '#0b2b4a' }}>
-              Finance Manager Dashboard
-            </h1>
-            <p className="text-muted">Welcome back, <strong>{user?.username}</strong>! Manage employee salaries.</p>
-          </Col>
-          <Col xs="auto" className="d-flex gap-2">
-            <Button variant="outline-primary" onClick={fetchData} disabled={loading} className="rounded-pill px-4">
-              <FaSync className={loading ? 'spin' : ''} /> Refresh
-            </Button>
-            <Button variant="outline-danger" onClick={handleLogout} className="rounded-pill px-4">
-              <FaSignOutAlt className="me-1" /> Logout
-            </Button>
-          </Col>
-        </Row>
+    <>
+      <style>{printStyles}</style>
 
-        {error && <Alert variant="danger">{error}</Alert>}
-        {salaryError && <Alert variant="warning">{salaryError}</Alert>}
+      {/* ✅ Hidden print area – only visible when printing */}
+      <div id="receipt-print-area" className="receipt-print-hidden">
+        <div className="receipt-container">
+          {receiptData && renderReceipt(receiptData)}
+        </div>
+      </div>
 
-        <Row className="mb-4 g-3">
-          <Col md={3} sm={6}>
-            <Card className="border-0 shadow-sm h-100" style={{ borderRadius: '16px' }}>
-              <Card.Body className="d-flex align-items-center">
-                <div className="rounded-circle p-3 me-3" style={{ background: 'rgba(13, 110, 253, 0.1)' }}>
-                  <FaUsers size={24} color="#0d6efd" />
-                </div>
-                <div>
-                  <h6 className="text-muted mb-0">Employees</h6>
-                  <h3 className="fw-bold mb-0">{stats.totalEmployees}</h3>
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
-          <Col md={3} sm={6}>
-            <Card className="border-0 shadow-sm h-100" style={{ borderRadius: '16px' }}>
-              <Card.Body className="d-flex align-items-center">
-                <div className="rounded-circle p-3 me-3" style={{ background: 'rgba(40, 167, 69, 0.1)' }}>
-                  <FaWallet size={24} color="#28a745" />
-                </div>
-                <div>
-                  <h6 className="text-muted mb-0">Total Paid</h6>
-                  <h3 className="fw-bold mb-0">{stats.totalPaid.toLocaleString()} birr</h3>
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
-          <Col md={3} sm={6}>
-            <Card className="border-0 shadow-sm h-100" style={{ borderRadius: '16px' }}>
-              <Card.Body className="d-flex align-items-center">
-                <div className="rounded-circle p-3 me-3" style={{ background: 'rgba(255, 193, 7, 0.1)' }}>
-                  <FaClock size={24} color="#ffc107" />
-                </div>
-                <div>
-                  <h6 className="text-muted mb-0">Pending</h6>
-                  <h3 className="fw-bold mb-0">{stats.pendingPayments}</h3>
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
-          <Col md={3} sm={6}>
-            <Card className="border-0 shadow-sm h-100" style={{ borderRadius: '16px' }}>
-              <Card.Body className="d-flex align-items-center">
-                <div className="rounded-circle p-3 me-3" style={{ background: 'rgba(23, 162, 184, 0.1)' }}>
-                  <FaChartLine size={24} color="#17a2b8" />
-                </div>
-                <div>
-                  <h6 className="text-muted mb-0">Total Payments</h6>
-                  <h3 className="fw-bold mb-0">{stats.recentPayments}</h3>
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
+      <div style={{ background: '#f0f4f8', minHeight: '100vh', padding: '2rem 1.5rem' }}>
+        <Container fluid>
+          <Row className="mb-4 align-items-center">
+            <Col>
+              <h1 className="display-5 fw-bold" style={{ color: '#0b2b4a' }}>
+                Finance Manager Dashboard
+              </h1>
+              <p className="text-muted">
+                Welcome back, <strong>{user?.username}</strong>! Manage employee salaries.
+              </p>
+            </Col>
+            <Col xs="auto" className="d-flex gap-2">
+              <Button
+                variant="outline-primary"
+                onClick={fetchData}
+                disabled={loading}
+                className="rounded-pill px-4"
+              >
+                <FaSync className={loading ? 'spin' : ''} /> Refresh
+              </Button>
+              <Button
+                variant="outline-danger"
+                onClick={handleLogout}
+                className="rounded-pill px-4"
+              >
+                <FaSignOutAlt className="me-1" /> Logout
+              </Button>
+            </Col>
+          </Row>
 
-        {/* Employees Table */}
-        <Card className="border-0 shadow-sm mb-4" style={{ borderRadius: '16px', overflow: 'hidden' }}>
-          <Card.Header className="bg-white border-0 py-3">
-            <div className="d-flex align-items-center">
-              <FaUsers className="me-2 text-primary" />
-              <span className="fw-bold">Employees</span>
-              <span className="badge bg-primary ms-2 rounded-pill">{employees.length}</span>
-            </div>
-          </Card.Header>
-          <Card.Body className="p-0">
-            <div className="table-responsive">
-              <Table hover className="mb-0">
-                <thead style={{ background: '#f8fafc' }}>
-                  <tr>
-                    <th>ID</th>
-                    <th>Name</th>
-                    <th>Username</th>
-                    <th>Email</th>
-                    <th className="text-end">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {employees.length === 0 ? (
-                    <tr><td colSpan="5" className="text-center text-muted py-4">No employees found.</td></tr>
-                  ) : (
-                    employees.map(emp => (
-                      <tr key={emp.id}>
-                        <td>{emp.id}</td>
-                        <td><strong>{emp.firstName} {emp.lastName}</strong></td>
-                        <td>{emp.username}</td>
-                        <td>{emp.email}</td>
-                        <td className="text-end">
-                          <Button variant="success" size="sm" onClick={() => handlePayClick(emp)} className="rounded-pill px-3">
-                            <FaMoneyBillWave className="me-1" /> Pay Salary
-                          </Button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </Table>
-            </div>
-          </Card.Body>
-        </Card>
+          {error && <Alert variant="danger">{error}</Alert>}
+          {salaryError && <Alert variant="warning">{salaryError}</Alert>}
 
-        {/* Recent Salary Payments */}
-        {!salaryError && salaryPayments.length > 0 && (
-          <Card className="border-0 shadow-sm" style={{ borderRadius: '16px', overflow: 'hidden' }}>
+          {/* Statistics Cards */}
+          <Row className="mb-4 g-3">
+            <Col md={3} sm={6}>
+              <Card className="border-0 shadow-sm h-100" style={{ borderRadius: '16px' }}>
+                <Card.Body className="d-flex align-items-center">
+                  <div
+                    className="rounded-circle p-3 me-3"
+                    style={{ background: 'rgba(13, 110, 253, 0.1)' }}
+                  >
+                    <FaUsers size={24} color="#0d6efd" />
+                  </div>
+                  <div>
+                    <h6 className="text-muted mb-0">Employees</h6>
+                    <h3 className="fw-bold mb-0">{stats.totalEmployees}</h3>
+                  </div>
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col md={3} sm={6}>
+              <Card className="border-0 shadow-sm h-100" style={{ borderRadius: '16px' }}>
+                <Card.Body className="d-flex align-items-center">
+                  <div
+                    className="rounded-circle p-3 me-3"
+                    style={{ background: 'rgba(40, 167, 69, 0.1)' }}
+                  >
+                    <FaWallet size={24} color="#28a745" />
+                  </div>
+                  <div>
+                    <h6 className="text-muted mb-0">Total Paid</h6>
+                    <h3 className="fw-bold mb-0">{stats.totalPaid.toLocaleString()} birr</h3>
+                  </div>
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col md={3} sm={6}>
+              <Card className="border-0 shadow-sm h-100" style={{ borderRadius: '16px' }}>
+                <Card.Body className="d-flex align-items-center">
+                  <div
+                    className="rounded-circle p-3 me-3"
+                    style={{ background: 'rgba(255, 193, 7, 0.1)' }}
+                  >
+                    <FaClock size={24} color="#ffc107" />
+                  </div>
+                  <div>
+                    <h6 className="text-muted mb-0">Pending</h6>
+                    <h3 className="fw-bold mb-0">{stats.pendingPayments}</h3>
+                  </div>
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col md={3} sm={6}>
+              <Card className="border-0 shadow-sm h-100" style={{ borderRadius: '16px' }}>
+                <Card.Body className="d-flex align-items-center">
+                  <div
+                    className="rounded-circle p-3 me-3"
+                    style={{ background: 'rgba(23, 162, 184, 0.1)' }}
+                  >
+                    <FaChartLine size={24} color="#17a2b8" />
+                  </div>
+                  <div>
+                    <h6 className="text-muted mb-0">Total Payments</h6>
+                    <h3 className="fw-bold mb-0">{stats.recentPayments}</h3>
+                  </div>
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+
+          {/* Employees Table */}
+          <Card className="border-0 shadow-sm mb-4" style={{ borderRadius: '16px', overflow: 'hidden' }}>
             <Card.Header className="bg-white border-0 py-3">
               <div className="d-flex align-items-center">
-                <FaClock className="me-2 text-secondary" />
-                <span className="fw-bold">Recent Salary Payments</span>
-                <span className="badge bg-secondary ms-2 rounded-pill">{salaryPayments.length}</span>
+                <FaUsers className="me-2 text-primary" />
+                <span className="fw-bold">Employees</span>
+                <span className="badge bg-primary ms-2 rounded-pill">{employees.length}</span>
               </div>
             </Card.Header>
             <Card.Body className="p-0">
               <div className="table-responsive">
-                <Table hover className="mb-0" size="sm">
+                <Table hover className="mb-0">
                   <thead style={{ background: '#f8fafc' }}>
                     <tr>
-                      <th>Employee</th>
-                      <th>Month</th>
-                      <th className="text-end">Amount</th>
-                      <th>Status</th>
-                      <th>Date</th>
+                      <th>ID</th>
+                      <th>Name</th>
+                      <th>Username</th>
+                      <th>Email</th>
+                      <th className="text-end">Action</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {salaryPayments.slice(0, 10).map(pay => (
-                      <tr key={pay.id}>
-                        <td>{pay.employee?.firstName} {pay.employee?.lastName}</td>
-                        <td>{pay.paymentMonth}</td>
-                        <td className="text-end fw-bold">{pay.amount.toLocaleString()} birr</td>
-                        <td>
-                          <Badge bg={pay.status === 'APPROVED' ? 'success' : 'warning'}>
-                            {pay.status}
-                          </Badge>
+                    {employees.length === 0 ? (
+                      <tr>
+                        <td colSpan="5" className="text-center text-muted py-4">
+                          No employees found.
                         </td>
-                        <td>{new Date(pay.approvedAt || pay.createdAt).toLocaleDateString()}</td>
                       </tr>
-                    ))}
+                    ) : (
+                      employees.map((emp) => (
+                        <tr key={emp.id}>
+                          <td>{emp.id}</td>
+                          <td>
+                            <strong>
+                              {emp.firstName} {emp.lastName}
+                            </strong>
+                          </td>
+                          <td>{emp.username}</td>
+                          <td>{emp.email}</td>
+                          <td className="text-end">
+                            <Button
+                              variant="success"
+                              size="sm"
+                              onClick={() => handlePayClick(emp)}
+                              className="rounded-pill px-3"
+                            >
+                              <FaMoneyBillWave className="me-1" /> Pay Salary
+                            </Button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </Table>
               </div>
             </Card.Body>
           </Card>
-        )}
 
-        {/* Pay Salary Modal */}
-        <Modal show={showModal} onHide={() => setShowModal(false)} centered size="lg">
-          <Modal.Header closeButton className="border-0">
-            <Modal.Title>Pay Salary</Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-            {payResult && (
-              <Alert variant={payResult.success ? 'success' : 'danger'}>
-                {payResult.message}
-              </Alert>
-            )}
-            <Form>
-              <Form.Group className="mb-3">
-                <Form.Label>Employee</Form.Label>
-                <Form.Control
-                  type="text"
-                  readOnly
-                  value={selectedEmployee ? `${selectedEmployee.firstName} ${selectedEmployee.lastName}` : ''}
-                  style={{ background: '#f8fafc' }}
-                />
-              </Form.Group>
-
-              <Form.Group className="mb-3">
-                <Form.Label>Select Year and Month</Form.Label>
-                <Row>
-                  <Col md={6}>
-                    <Form.Select
-                      value={selectedYear}
-                      onChange={(e) => setSelectedYear(e.target.value)}
-                      required
-                    >
-                      <option value="">Year</option>
-                      {years.map(year => (
-                        <option key={year} value={year}>{year}</option>
+          {/* Recent Salary Payments */}
+          {!salaryError && salaryPayments.length > 0 && (
+            <Card className="border-0 shadow-sm" style={{ borderRadius: '16px', overflow: 'hidden' }}>
+              <Card.Header className="bg-white border-0 py-3">
+                <div className="d-flex align-items-center">
+                  <FaClock className="me-2 text-secondary" />
+                  <span className="fw-bold">Recent Salary Payments</span>
+                  <span className="badge bg-secondary ms-2 rounded-pill">
+                    {salaryPayments.length}
+                  </span>
+                </div>
+              </Card.Header>
+              <Card.Body className="p-0">
+                <div className="table-responsive">
+                  <Table hover className="mb-0" size="sm">
+                    <thead style={{ background: '#f8fafc' }}>
+                      <tr>
+                        <th>Employee</th>
+                        <th>Month</th>
+                        <th className="text-end">Amount</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {salaryPayments.slice(0, 10).map((pay) => (
+                        <tr key={pay.id}>
+                          <td>
+                            {pay.employee?.firstName} {pay.employee?.lastName}
+                          </td>
+                          <td>{pay.paymentMonth}</td>
+                          <td className="text-end fw-bold">{pay.amount.toLocaleString()} birr</td>
+                          <td>
+                            <Badge bg={pay.status === 'APPROVED' ? 'success' : 'warning'}>
+                              {pay.status}
+                            </Badge>
+                          </td>
+                          <td>{new Date(pay.approvedAt || pay.createdAt).toLocaleDateString()}</td>
+                        </tr>
                       ))}
-                    </Form.Select>
-                  </Col>
-                  <Col md={6}>
-                    <Form.Select
-                      value={selectedMonth}
-                      onChange={(e) => setSelectedMonth(e.target.value)}
-                      required
-                      disabled={!selectedYear || loadingPaidMonths}
-                    >
-                      <option value="">Month</option>
-                      {months.map(({ value, label }) => {
-                        const isPaid = selectedYear && isMonthPaid(selectedYear, value);
-                        return (
-                          <option
-                            key={value}
-                            value={value}
-                            disabled={isPaid}
-                            style={isPaid ? { backgroundColor: '#f8d7da', color: '#6c757d' } : {}}
-                          >
-                            {label} {isPaid ? '(Paid)' : ''}
+                    </tbody>
+                  </Table>
+                </div>
+              </Card.Body>
+            </Card>
+          )}
+
+          {/* Pay Salary Modal */}
+          <Modal show={showModal} onHide={() => setShowModal(false)} centered size="lg">
+            <Modal.Header closeButton className="border-0">
+              <Modal.Title>Pay Salary</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              {payResult && (
+                <Alert variant={payResult.success ? 'success' : 'danger'}>
+                  {payResult.message}
+                </Alert>
+              )}
+              <Form>
+                <Form.Group className="mb-3">
+                  <Form.Label>Employee</Form.Label>
+                  <Form.Control
+                    type="text"
+                    readOnly
+                    value={
+                      selectedEmployee
+                        ? `${selectedEmployee.firstName} ${selectedEmployee.lastName}`
+                        : ''
+                    }
+                    style={{ background: '#f8fafc' }}
+                  />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Select Year and Month</Form.Label>
+                  <Row>
+                    <Col md={6}>
+                      <Form.Select
+                        value={selectedYear}
+                        onChange={(e) => setSelectedYear(e.target.value)}
+                        required
+                      >
+                        <option value="">Year</option>
+                        {years.map((year) => (
+                          <option key={year} value={year}>
+                            {year}
                           </option>
-                        );
-                      })}
-                    </Form.Select>
-                  </Col>
-                </Row>
-                {selectedYear && selectedMonth && isMonthPaid(selectedYear, selectedMonth) && (
-                  <Form.Text className="text-danger">
-                    ⚠️ Salary for this month has already been paid.
+                        ))}
+                      </Form.Select>
+                    </Col>
+                    <Col md={6}>
+                      <Form.Select
+                        value={selectedMonth}
+                        onChange={(e) => setSelectedMonth(e.target.value)}
+                        required
+                        disabled={!selectedYear || loadingPaidMonths}
+                      >
+                        <option value="">Month</option>
+                        {months.map(({ value, label }) => {
+                          const isPaid = selectedYear && isMonthPaid(selectedYear, value);
+                          return (
+                            <option
+                              key={value}
+                              value={value}
+                              disabled={isPaid}
+                              style={isPaid ? { backgroundColor: '#f8d7da', color: '#6c757d' } : {}}
+                            >
+                              {label} {isPaid ? '(Paid)' : ''}
+                            </option>
+                          );
+                        })}
+                      </Form.Select>
+                    </Col>
+                  </Row>
+                  {selectedYear && selectedMonth && isMonthPaid(selectedYear, selectedMonth) && (
+                    <Form.Text className="text-danger">
+                      ⚠️ Salary for this month has already been paid.
+                    </Form.Text>
+                  )}
+                  {loadingPaidMonths && <Form.Text className="text-muted">Loading paid months...</Form.Text>}
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Amount (birr)</Form.Label>
+                  <Form.Control
+                    type="number"
+                    step="0.01"
+                    placeholder="Enter amount in birr"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                  />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>OTP (6 digits from your Soft Token app)</Form.Label>
+                  <Form.Control
+                    type="text"
+                    placeholder="000000"
+                    maxLength={6}
+                    value={otp}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '');
+                      setOtp(val);
+                    }}
+                    style={{ fontSize: '24px', textAlign: 'center', letterSpacing: '8px' }}
+                  />
+                  <Form.Text className="text-muted">
+                    Open your Soft Token app, generate the OTP, and enter it here.
                   </Form.Text>
-                )}
-                {loadingPaidMonths && <Form.Text className="text-muted">Loading paid months...</Form.Text>}
-              </Form.Group>
+                </Form.Group>
+              </Form>
+            </Modal.Body>
+            <Modal.Footer className="border-0">
+              <Button variant="outline-secondary" onClick={() => setShowModal(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="success"
+                onClick={handlePaySubmit}
+                disabled={
+                  paying ||
+                  !selectedYear ||
+                  !selectedMonth ||
+                  isMonthPaid(selectedYear, selectedMonth)
+                }
+              >
+                {paying ? <Spinner as="span" animation="border" size="sm" /> : 'Pay Salary'}
+              </Button>
+            </Modal.Footer>
+          </Modal>
 
-              <Form.Group className="mb-3">
-                <Form.Label>Amount (birr)</Form.Label>
-                <Form.Control
-                  type="number"
-                  step="0.01"
-                  placeholder="Enter amount in birr"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                />
-              </Form.Group>
-
-              <Form.Group className="mb-3">
-                <Form.Label>OTP (6 digits from your Soft Token app)</Form.Label>
-                <Form.Control
-                  type="text"
-                  placeholder="000000"
-                  maxLength={6}
-                  value={otp}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, '');
-                    setOtp(val);
-                  }}
-                  style={{ fontSize: '24px', textAlign: 'center', letterSpacing: '8px' }}
-                />
-                <Form.Text className="text-muted">
-                  Open your Soft Token app to get the OTP.
-                </Form.Text>
-              </Form.Group>
-            </Form>
-          </Modal.Body>
-          <Modal.Footer className="border-0">
-            <Button variant="outline-secondary" onClick={() => setShowModal(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="success"
-              onClick={handlePaySubmit}
-              disabled={paying || !selectedYear || !selectedMonth || isMonthPaid(selectedYear, selectedMonth)}
-            >
-              {paying ? <Spinner as="span" animation="border" size="sm" /> : 'Pay Salary'}
-            </Button>
-          </Modal.Footer>
-        </Modal>
-      </Container>
-    </div>
+          {/* ✅ Receipt Modal */}
+          <Modal
+            show={showReceiptModal}
+            onHide={() => setShowReceiptModal(false)}
+            centered
+            size="lg"
+            className="no-print"
+          >
+            <Modal.Header closeButton className="border-0">
+              <Modal.Title>Payment Receipt</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              <div className="receipt-container" style={{ maxWidth: '100%' }}>
+                {receiptData && renderReceipt(receiptData)}
+              </div>
+            </Modal.Body>
+            <Modal.Footer className="border-0 no-print">
+              <Button variant="outline-secondary" onClick={() => setShowReceiptModal(false)}>
+                Close
+              </Button>
+              <Button variant="primary" onClick={handlePrintReceipt}>
+                <FaPrint className="me-2" /> Print / Download PDF
+              </Button>
+            </Modal.Footer>
+          </Modal>
+        </Container>
+      </div>
+    </>
   );
 };
 
