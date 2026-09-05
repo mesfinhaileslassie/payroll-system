@@ -1,5 +1,5 @@
 // src/services/deviceService.js
-import api from './api'; // ✅ default import
+import api from './api'; 
 
 export const deviceService = {
   registerDevice: async (data) => {

@@ -27,7 +27,6 @@ import {
   FaPrint,
 } from 'react-icons/fa';
 
-// ✅ Print Styles – hides everything except the receipt div
 const printStyles = `
   /* Hide everything on screen */
   .receipt-print-hidden {

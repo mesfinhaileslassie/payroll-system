@@ -5,8 +5,7 @@ import Layout from '../components/common/Layout';
 import { FaShieldAlt, FaCheckCircle } from 'react-icons/fa';
 import axios from 'axios';
 
-// Use localhost for development
-const API_URL = 'http://localhost:5062/api';
+const API_URL = 'http://102.208.98.85:7201/api';
 
 const OTPScreen = () => {
   const [otp, setOtp] = useState('');
@@ -28,7 +27,7 @@ const OTPScreen = () => {
           if (deviceData.secretKey) {
             setSecretKey(deviceData.secretKey);
             setDeviceStatus(deviceData.status);
-            console.log('✅ Secret Key loaded from active device:', deviceData.secretKey);
+            console.log(' Secret Key loaded from active device:', deviceData.secretKey);
           } else {
             console.log('⚠️ Active device found but no secret key');
             setDeviceStatus('NO_SECRET_KEY');
@@ -38,7 +37,7 @@ const OTPScreen = () => {
           setDeviceStatus('NO_ACTIVE_DEVICE');
         }
       } catch (error) {
-        console.error('❌ Error loading secret key:', error);
+        console.error(' Error loading secret key:', error);
         setDeviceStatus('ERROR');
       } finally {
         setIsLoadingSecret(false);
@@ -60,7 +59,6 @@ const OTPScreen = () => {
       console.log('🔑 Verifying OTP...');
       console.log('📱 OTP entered:', otp);
 
-      // ✅ Call the real backend API
       const response = await axios.post(`${API_URL}/device/verify-otp`, {
         token: otp
       });
@@ -70,18 +68,18 @@ const OTPScreen = () => {
       if (response.data.valid) {
         setResult({ 
           success: true, 
-          message: '✅ OTP Verified Successfully!' 
+          message: ' OTP Verified Successfully!' 
         });
         setOtp('');
       } else {
         setResult({ 
           success: false, 
-          message: '❌ Invalid OTP. Please generate a new token in the Soft Token app.' 
+          message: ' Invalid OTP. Please generate a new token in the Soft Token app.' 
         });
         setOtp('');
       }
     } catch (error) {
-      console.error('❌ Error:', error);
+      console.error(' Error:', error);
       setResult({ 
         success: false, 
         message: error.response?.data?.message || 'Error verifying OTP' 

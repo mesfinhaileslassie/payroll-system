@@ -6,8 +6,6 @@ import { useAuth } from '../context/AuthContext';
 import api from '../services/api'; // ✅ Use the configured api instance
 import { FaUser, FaLock, FaSignInAlt } from 'react-icons/fa';
 
-// Remove the hardcoded API_URL – it's now in api.js
-// const API_URL = 'http://127.0.0.1:5062/api';
 
 const LoginPage = () => {
   const [username, setUsername] = useState('');
@@ -22,7 +20,6 @@ const LoginPage = () => {
     setError('');
     setLoading(true);
     try {
-      // ✅ Use api instance instead of axios directly
       const response = await api.post('/auth/login', { username, password });
       if (response.data.success) {
         const { userId, username, role, token } = response.data;
